@@ -165,73 +165,122 @@
       updateScore();
     }
 
+    // Core generator: truth path + protected branch landings, then fill 6–10 pieces around
     function generateSegmentWithTruthPathAndChoices(){
+      // Initial fill: random 6..10 opposition
       randomlyPlaceOpposition(randInt(6,10));
+
       let attempts = 0;
       while (attempts < 25){
         const res = bfsPawnSafePath(board);
         if (res && res.path && res.path.length){
           const protectedSquares = new Set(res.path.map(s => keyOf(s.r, s.c)));
+
+          // Inject 1–3 branch choices (forward vs diagonal capture)
           injectBranchChoices(res.path, protectedSquares);
+
+          // Ensure all protected squares are safe
           ensureProtectedSquaresSafe(protectedSquares);
+
+          // Keep opposition count in range and re-validate
           enforceOppositionCountRange(6, 10, protectedSquares);
           const res2 = bfsPawnSafePath(board);
           if (res2 && res2.path && res2.path.length){
             guardSquareFromAttack(player.row, player.col);
-            return;
+            return; // success
           } else {
+            // Soft repair: fix earliest failing row near start
             repairEarlyRows(protectedSquares);
             enforceOppositionCountRange(6, 10, protectedSquares);
           }
         } else {
+          // No path yet: minimally repair earliest rows
           repairEarlyRows(new Set());
         }
         attempts++;
       }
+      // Fallback softening near start
       for (let r=1;r<=3;r++){ board[r][player.col] = null; guardSquareFromAttack(r, player.col); }
       enforceOppositionCountRange(6, 10, new Set());
     }
 
     function randomlyPlaceOpposition(target){
-      let placed = 0; const candidates = [];
-      for (let r=1;r<=TOP_ROW;r++){ for (let c=0;c<BOARD_COLS;c++) candidates.push({r,c}); }
+      let placed = 0;
+      const candidates = [];
+      for (let r=1;r<=TOP_ROW;r++){
+        for (let c=0;c<BOARD_COLS;c++) candidates.push({r,c});
+      }
       shuffle(candidates);
       while (placed < target && candidates.length){
-        const {r,c} = candidates.pop(); if (board[r][c]) continue;
+        const {r,c} = candidates.pop();
+        if (board[r][c]) continue;
         const type = randomChoice(["p","n","b","r","q","k","n","b","r"]);
-        board[r][c] = { color: BLACK, type }; placed++;
+        board[r][c] = { color: BLACK, type };
+        placed++;
       }
     }
 
     function injectBranchChoices(path, protectedSquares){
-      const candidates = path.filter(s => s.r >= 1 && s.r <= 6); shuffle(candidates);
-      let added = 0; const targetChoices = randInt(1,3);
-      for (const step of candidates){ if (added >= targetChoices) break;
-        const i = path.findIndex(s => s.r === step.r && s.c === step.c); if (i <= 0) continue;
-        const prev = path[i-1]; const r = step.r, c = step.c; const isForward = (c === prev.c);
+      const candidates = path.filter(s => s.r >= 1 && s.r <= 6);
+      shuffle(candidates);
+      let added = 0;
+      for (const step of candidates){
+        if (added >= randInt(1,3)) break;
+        const i = path.findIndex(s => s.r === step.r && s.c === step.c);
+        if (i <= 0) continue;
+        const prev = path[i-1];
+        const r = step.r, c = step.c;
+        const isForward = (c === prev.c);
+
         if (isForward){
-          for (const dc of shuffleCopy([-1,+1])){ const altC = c + dc; if (!inBounds(r, altC)) continue;
-            if (!board[r][altC]) board[r][altC] = { color: BLACK, type: randomChoice(["n","r","b"]) };
+          for (const dc of shuffleCopy([-1,+1])){
+            const altC = c + dc;
+            if (!inBounds(r, altC)) continue;
+            if (!board[r][altC]){
+              board[r][altC] = { color: BLACK, type: randomChoice(["n","r","b"]) };
+            }
             pruneAttackersForCaptureLanding(prev.r, prev.c, r, altC);
             if (landingSafeAfterSimulatedCapture(prev.r, prev.c, r, altC)){
-              protectedSquares.add(keyOf(r, altC)); ensureOneFollowUpFrom(r, altC, protectedSquares); added++; break;
-            } else { board[r][altC] = null; }
+              protectedSquares.add(keyOf(r, altC));
+              // Provide one safe follow-up option (not a clear lane)
+              ensureOneFollowUpFrom(r, altC, protectedSquares);
+              added++; break;
+            } else {
+              board[r][altC] = null;
+            }
           }
         } else {
-          const altC = prev.c; board[r][altC] = null; guardSquareFromAttack(r, altC);
-          protectedSquares.add(keyOf(r, altC)); ensureOneFollowUpFrom(r, altC, protectedSquares); added++;
+          const altC = prev.c;
+          board[r][altC] = null;
+          guardSquareFromAttack(r, altC);
+          protectedSquares.add(keyOf(r, altC));
+          ensureOneFollowUpFrom(r, altC, protectedSquares);
+          added++;
         }
       }
     }
 
     function ensureOneFollowUpFrom(r, c, protectedSquares){
       const nr = r + 1; if (nr > TOP_ROW) return;
-      if (isEmpty(nr, c)){ guardSquareFromAttack(nr, c); protectedSquares.add(keyOf(nr, c)); return; }
-      for (const dc of shuffleCopy([-1,+1])){ const nc = c + dc; if (!inBounds(nr, nc)) continue;
+      // Prefer forward follow-up; else one diagonal capture option
+      if (isEmpty(nr, c)){
+        guardSquareFromAttack(nr, c);
+        protectedSquares.add(keyOf(nr, c));
+        return;
+      }
+      for (const dc of shuffleCopy([-1,+1])){
+        const nc = c + dc;
+        if (!inBounds(nr, nc)) continue;
         if (!board[nr][nc]) board[nr][nc] = { color: BLACK, type: randomChoice(["n","r","b"]) };
         pruneAttackersForCaptureLanding(r, c, nr, nc);
-        if (landingSafeAfterSimulatedCapture(r, c, nr, nc)){ protectedSquares.add(keyOf(nr, nc)); return; } else { board[nr][nc] = null; }
+        if (landingSafeAfterSimulatedCapture(r, c, nr, nc)){
+          protectedSquares.add(keyOf(nr, nc));
+          return;
+        } else {
+          board[nr][nc] = null;
+        }
       }
+      // fallback: clear forward (only at this step, not a corridor)
       board[nr][c] = null; guardSquareFromAttack(nr, c); protectedSquares.add(keyOf(nr, c));
     }
 
@@ -242,68 +291,127 @@
         const leftOk = (c-1>=0) && isBlackAt(r, c-1) && landingSafeAfterSimulatedCapture(r-1, c, r, c-1);
         const rightOk= (c+1<BOARD_COLS) && isBlackAt(r, c+1) && landingSafeAfterSimulatedCapture(r-1, c, r, c+1);
         if (forwardOk || leftOk || rightOk) continue;
-        for (const dc of shuffleCopy([-1,+1])){ const nc = c + dc; if (!inBounds(r, nc)) continue;
+
+        // Try create diagonal target first
+        for (const dc of shuffleCopy([-1,+1])){
+          const nc = c + dc; if (!inBounds(r, nc)) continue;
           board[r][nc] = { color: BLACK, type: randomChoice(["n","r","b"]) };
           pruneAttackersForCaptureLanding(r-1, c, r, nc);
-          if (landingSafeAfterSimulatedCapture(r-1, c, r, nc)){ protectedSquares.add(keyOf(r, nc)); ensureOneFollowUpFrom(r, nc, protectedSquares); return; }
-          else { board[r][nc] = null; }
+          if (landingSafeAfterSimulatedCapture(r-1, c, r, nc)){
+            protectedSquares.add(keyOf(r, nc));
+            ensureOneFollowUpFrom(r, nc, protectedSquares);
+            return;
+          } else {
+            board[r][nc] = null;
+          }
         }
+        // Else clear forward minimally
         board[r][c] = null; guardSquareFromAttack(r, c); protectedSquares.add(keyOf(r, c)); return;
       }
     }
 
     function enforceOppositionCountRange(min, max, forbidden){
       let count = countBlackPieces();
-      if (count < min){ const need = min - count; const extras = collectOppCandidates(forbidden, "far"); placeOppFromCandidates(extras, need, forbidden); }
+      if (count < min){
+        const need = min - count;
+        const extras = collectOppCandidates(forbidden, "far");
+        placeOppFromCandidates(extras, need, forbidden);
+      }
       while ((count = countBlackPieces()) > max){
-        const list = []; for (let r=0;r<BOARD_ROWS;r++){ for (let c=0;c<BOARD_COLS;c++){
-          const p = board[r][c]; if (p && p.color === BLACK && !forbidden.has(keyOf(r,c))){ list.push({r,c, d: Math.abs(c - player.col) + Math.abs(r - 0)}); }
-        }} if (!list.length) break; list.sort((a,b)=>b.d - a.d); const rem = list[0]; board[rem.r][rem.c] = null;
+        const list = [];
+        for (let r=0;r<BOARD_ROWS;r++){
+          for (let c=0;c<BOARD_COLS;c++){
+            const p = board[r][c];
+            if (p && p.color === BLACK && !forbidden.has(keyOf(r,c))){
+              list.push({r,c, d: Math.abs(c - player.col) + Math.abs(r - 0)});
+            }
+          }
+        }
+        if (!list.length) break;
+        list.sort((a,b)=>b.d - a.d);
+        const rem = list[0]; board[rem.r][rem.c] = null;
       }
     }
     function collectOppCandidates(forbidden, bias){
-      const cand = []; for (let r=1;r<=TOP_ROW;r++){ for (let c=0;c<BOARD_COLS;c++){
-        if (board[r][c]) continue; const k = keyOf(r,c); if (forbidden.has(k)) continue;
-        const nearLane = Math.abs(c - player.col) <= 2; if ((bias === "near" && nearLane) || (bias === "far" && !nearLane)) cand.push({r,c,bias});
-      }} shuffle(cand); return cand;
+      const cand = [];
+      for (let r=1;r<=TOP_ROW;r++){
+        for (let c=0;c<BOARD_COLS;c++){
+          if (board[r][c]) continue;
+          const k = keyOf(r,c); if (forbidden.has(k)) continue;
+          const nearLane = Math.abs(c - player.col) <= 2;
+          if ((bias === "near" && nearLane) || (bias === "far" && !nearLane)) cand.push({r,c,bias});
+        }
+      }
+      shuffle(cand); return cand;
     }
     function placeOppFromCandidates(candidates, need, forbidden){
-      let placed = 0; for (const cand of candidates){ if (placed >= need) break; if (board[cand.r][cand.c]) continue;
-        const type = chooseOppType(cand.bias); board[cand.r][cand.c] = { color: BLACK, type };
-        if (attacksAnyProtected(cand.r, cand.c, type, forbidden)){ board[cand.r][cand.c] = null; continue; } placed++; }
+      let placed = 0;
+      for (const cand of candidates){
+        if (placed >= need) break;
+        if (board[cand.r][cand.c]) continue;
+        const type = chooseOppType(cand.bias);
+        board[cand.r][cand.c] = { color: BLACK, type };
+        if (attacksAnyProtected(cand.r, cand.c, type, forbidden)){ board[cand.r][cand.c] = null; continue; }
+        placed++;
+      }
       return placed;
     }
-    function chooseOppType(bias){ return (bias === "near") ? randomChoice(["n","b","r","p"]) : randomChoice(["b","r","q","n","p","k"]); }
+    function chooseOppType(bias){
+      return (bias === "near") ? randomChoice(["n","b","r","p"]) : randomChoice(["b","r","q","n","p","k"]);
+    }
 
+    // BFS sequential simulation for pawn
     function bfsPawnSafePath(b){
       const start = { r: player.row, c: player.col, firstDone: false, b: cloneBoard(b) };
-      const queue = [start]; const seen = new Set([stateKey(start)]); const parent = new Map(); const stateMap = new Map([[stateKey(start), start]]);
-      while (queue.length){ const s = queue.shift(); if (s.r === TOP_ROW){ return reconstructPath(s, parent, stateMap); }
+      const queue = [start];
+      const seen = new Set([stateKey(start)]);
+      const parent = new Map(); const stateMap = new Map([[stateKey(start), start]]);
+
+      while (queue.length){
+        const s = queue.shift();
+        if (s.r === TOP_ROW){ return reconstructPath(s, parent, stateMap); }
         const moves = getPawnMovesOnBoard(s.b, s.r, s.c, s.firstDone);
-        for (const mv of moves){ const next = simulatePawnMoveOnBoard(s, mv); if (!next) continue; const k = stateKey(next); if (seen.has(k)) continue;
-          seen.add(k); parent.set(k, stateKey(s)); stateMap.set(k, next); queue.push(next); }
-      } return null;
+        for (const mv of moves){
+          const next = simulatePawnMoveOnBoard(s, mv);
+          if (!next) continue;
+          const k = stateKey(next); if (seen.has(k)) continue;
+          seen.add(k); parent.set(k, stateKey(s)); stateMap.set(k, next); queue.push(next);
+        }
+      }
+      return null;
     }
-    function reconstructPath(endState, parent, stateMap){ const path = []; let k = stateKey(endState);
-      while (k){ const st = stateMap.get(k); path.push({ r: st.r, c: st.c }); k = parent.get(k); } path.reverse(); return { path }; }
+    function reconstructPath(endState, parent, stateMap){
+      const path = []; let k = stateKey(endState);
+      while (k){ const st = stateMap.get(k); path.push({ r: st.r, c: st.c }); k = parent.get(k); }
+      path.reverse(); return { path };
+    }
     function stateKey(st){ return st.r + "|" + st.c + "|" + (st.firstDone?1:0) + "|" + hashBoard(st.b); }
-    function hashBoard(b){ let s = ""; for (let r=0;r<BOARD_ROWS;r++){ for (let c=0;c<BOARD_COLS;c++){ const p = b[r][c]; s += (p ? (p.color === BLACK ? p.type : p.type.toLowerCase()) : "."); }} return s; }
+    function hashBoard(b){
+      let s = ""; for (let r=0;r<BOARD_ROWS;r++){ for (let c=0;c<BOARD_COLS;c++){
+        const p = b[r][c]; s += (p ? (p.color === BLACK ? p.type : p.type.toLowerCase()) : ".");
+      }} return s;
+    }
     function getPawnMovesOnBoard(b, r, c, firstDone){
       const out = []; const add = (rr,cc)=>{ if (!inBounds(rr,cc)) return; const d=b[rr][cc]; if (!d || d.color===BLACK) out.push({toRow:rr,toCol:cc}); };
-      const f1 = r + 1, f2 = r + 2; if (inBounds(f1,c) && !b[f1][c]) add(f1,c);
+      const f1 = r + 1, f2 = r + 2;
+      if (inBounds(f1,c) && !b[f1][c]) add(f1,c);
       if (!firstDone && r === 0 && inBounds(f2,c) && !b[f1][c] && !b[f2][c]) add(f2,c);
       if (inBounds(f1,c-1) && b[f1][c-1] && b[f1][c-1].color===BLACK) add(f1,c-1);
       if (inBounds(f1,c+1) && b[f1][c+1] && b[f1][c+1].color===BLACK) add(f1,c+1);
       return out;
     }
     function simulatePawnMoveOnBoard(state, mv){
-      const nb = cloneBoard(state.b); nb[state.r][state.c] = null; nb[mv.toRow][mv.toCol] = { color: WHITE, type: "P" };
-      if (isSquareAttackedByBlackOnBoard(nb, mv.toRow, mv.toCol)) return null; const nextFirstDone = state.firstDone || (state.r === 0);
+      const nb = cloneBoard(state.b);
+      nb[state.r][state.c] = null; nb[mv.toRow][mv.toCol] = { color: WHITE, type: "P" };
+      if (isSquareAttackedByBlackOnBoard(nb, mv.toRow, mv.toCol)) return null;
+      const nextFirstDone = state.firstDone || (state.r === 0);
       return { r: mv.toRow, c: mv.toCol, firstDone: nextFirstDone, b: nb };
     }
     function isSquareAttackedByBlackOnBoard(b, r, c){
-      for (let rr=0; rr<BOARD_ROWS; rr++){ for (let cc=0; cc<BOARD_COLS; cc++){ const p = b[rr][cc]; if (!p || p.color !== BLACK) continue;
-        if (blackAttacksSquareOnBoard(p.type, rr, cc, r, c, b)) return true; }} return false;
+      for (let rr=0; rr<BOARD_ROWS; rr++){ for (let cc=0; cc<BOARD_COLS; cc++){
+        const p = b[rr][cc]; if (!p || p.color !== BLACK) continue;
+        if (blackAttacksSquareOnBoard(p.type, rr, cc, r, c, b)) return true;
+      }} return false;
     }
     function blackAttacksSquareOnBoard(type, br, bc, tr, tc, b){
       const dr = tr - br, dc = tc - bc;
@@ -313,12 +421,13 @@
       if (type === "b" || type === "r" || type === "q"){
         const dirs = []; if (type !== "r") dirs.push([1,1],[1,-1],[-1,1],[-1,-1]); if (type !== "b") dirs.push([1,0],[-1,0],[0,1],[0,-1]);
         for (const [drr,dcc] of dirs){ let rr=br+drr, cc=bc+dcc;
-          while (inBounds(rr, cc)){ if (rr === tr && cc === tc) return true; const occ = b[rr][cc]; if (occ) break; rr += drr; cc += dcc; }
+          while (inBounds(rr,cc)){ if (rr===tr && cc===tc) return true; const occ=b[rr][cc]; if (occ) break; rr+=drr; cc+=dcc; }
         } return false;
       }
       return false;
     }
 
+    // Safety simulation on real board + pruning nearest attackers
     function landingSafeAfterSimulatedMove(fromR, fromC, toR, toC){
       const prevFrom = board[fromR][fromC], prevTo = board[toR][toC];
       board[fromR][fromC] = null; board[toR][toC] = { color: WHITE, type: player.type };
@@ -336,22 +445,29 @@
     function pruneAttackersForCaptureLanding(fromR, fromC, toR, toC){
       const prevFrom = board[fromR][fromC], prevTo = board[toR][toC];
       board[fromR][fromC] = null; board[toR][toC] = { color: WHITE, type: player.type };
-      let guard = 0; while (isSquareAttackedByBlack(toR, toC) && guard < 300){
-        const atks = attackersOfSquare(toR, toC); if (!atks.length) break;
+      let guard = 0;
+      while (isSquareAttackedByBlack(toR, toC) && guard < 300){
+        const atks = attackersOfSquare(toR, toC);
+        if (!atks.length) break;
         atks.sort((a,b)=>((a.row-toR)**2+(a.col-toC)**2)-((b.row-toR)**2+(b.col-toC)**2));
-        const kill = atks[0]; board[kill.row][kill.col] = null; guard++; }
+        const kill = atks[0]; board[kill.row][kill.col] = null; guard++;
+      }
       board[fromR][fromC] = prevFrom || null; board[toR][toC] = prevTo || null;
     }
 
+    // Attack utilities on current board
     function isSquareAttackedByBlack(r, c){
       for (let rr = 0; rr < BOARD_ROWS; rr++){ for (let cc = 0; cc < BOARD_COLS; cc++){
         const p = board[rr][cc]; if (!p || p.color !== BLACK) continue;
-        if (blackAttacksSquare(p.type, rr, cc, r, c)) return true; }} return false;
+        if (blackAttacksSquare(p.type, rr, cc, r, c)) return true;
+      }} return false;
     }
     function attackersOfSquare(r, c){
-      const list = []; for (let rr=0; rr<BOARD_ROWS; rr++){ for (let cc=0; cc<BOARD_COLS; cc++){
+      const list = [];
+      for (let rr=0; rr<BOARD_ROWS; rr++){ for (let cc=0; cc<BOARD_COLS; cc++){
         const p = board[rr][cc]; if (!p || p.color !== BLACK) continue;
-        if (blackAttacksSquare(p.type, rr, cc, r, c)) list.push({row: rr, col: cc, type: p.type}); }} return list;
+        if (blackAttacksSquare(p.type, rr, cc, r, c)) list.push({row: rr, col: cc, type: p.type});
+      }} return list;
     }
     function blackAttacksSquare(type, br, bc, tr, tc){
       const dr = tr - br, dc = tc - bc;
@@ -360,70 +476,116 @@
       if (type === "n"){ return (Math.abs(dr) === 2 && Math.abs(dc) === 1) || (Math.abs(dr) === 1 && Math.abs(dc) === 2); }
       if (type === "b" || type === "r" || type === "q"){
         const dirs = []; if (type !== "r") dirs.push([1,1],[1,-1],[-1,1],[-1,-1]); if (type !== "b") dirs.push([1,0],[-1,0],[0,1],[0,-1]);
-        for (const [drr,dcc] of dirs){ let rr = br + drr, cc = bc + dcc;
+        for (const [drr,dcc] of dirs){
+          let rr = br + drr, cc = bc + dcc;
           while (inBounds(rr, cc)){ if (rr === tr && cc === tc) return true; const occ = board[rr][cc]; if (occ) break; rr += drr; cc += dcc; }
         } return false;
       }
       return false;
     }
     function guardSquareFromAttack(r, c){
-      let guard = 0; while (isSquareAttackedByBlack(r, c) && guard < 300){
-        const atks = attackersOfSquare(r, c); if (!atks.length) break;
+      let guard = 0;
+      while (isSquareAttackedByBlack(r, c) && guard < 300){
+        const atks = attackersOfSquare(r, c);
+        if (!atks.length) break;
         atks.sort((a,b)=>((a.row-r)**2+(a.col-c)**2)-((b.row-r)**2+(b.col-c)**2));
-        const kill = atks[0]; board[kill.row][kill.col] = null; guard++; }
+        const kill = atks[0]; board[kill.row][kill.col] = null; guard++;
+      }
     }
     function attacksAnyProtected(br, bc, type, protectedSquares){
       for (const k of protectedSquares){ const [r,c] = k.split(",").map(Number);
-        if (blackAttacksSquare(type, br, bc, r, c)) return true; }
-      return false;
+        if (blackAttacksSquare(type, br, bc, r, c)) return true;
+      } return false;
     }
-    function ensureProtectedSquaresSafe(protectedSquares){ for (const k of protectedSquares){ const [r,c] = k.split(",").map(Number); guardSquareFromAttack(r,c); } }
+    function ensureProtectedSquaresSafe(protectedSquares){
+      for (const k of protectedSquares){ const [r,c] = k.split(",").map(Number); guardSquareFromAttack(r,c); }
+    }
 
-    function onBoardClick(e){ if (gameOver) return; const target = e.target.closest(".sq"); if (!target) return;
+    // Gameplay
+    function onBoardClick(e){
+      if (gameOver) return;
+      const target = e.target.closest(".sq"); if (!target) return;
       const r = parseInt(target.dataset.row, 10), c = parseInt(target.dataset.col, 10);
-      if (r === player.row && c === player.col){ const moves = getLegalMoves(player.type, player.row, player.col);
-        highlighted = new Set(moves.map(m => keyOf(m.toRow, m.toCol))); renderBoard(); return; }
-      const key = keyOf(r,c); if (highlighted.has(key)){ highlighted.clear(); performMove(r,c); renderBoard(); } else { highlighted.clear(); renderBoard(); }
+      if (r === player.row && c === player.col){
+        const moves = getLegalMoves(player.type, player.row, player.col);
+        highlighted = new Set(moves.map(m => keyOf(m.toRow, m.toCol))); renderBoard(); return;
+      }
+      const key = keyOf(r,c);
+      if (highlighted.has(key)){ highlighted.clear(); performMove(r,c); renderBoard(); }
+      else { highlighted.clear(); renderBoard(); }
     }
-    function performMove(toRow, toCol){ if (gameOver) return; const forwardGain = Math.max(0, toRow - player.row);
-      board[player.row][player.col] = null; player.row = toRow; player.col = toCol; placePiece(player.row, player.col, { color: WHITE, type: player.type });
+    function performMove(toRow, toCol){
+      if (gameOver) return;
+      const forwardGain = Math.max(0, toRow - player.row);
+      board[player.row][player.col] = null; player.row = toRow; player.col = toCol;
+      placePiece(player.row, player.col, { color: WHITE, type: player.type });
       if (forwardGain > 0){ score += forwardGain; updateScore(); applyProgression(); }
       if (isSquareAttackedByBlack(player.row, player.col)){ endGame(); return; }
       if (player.row === TOP_ROW){ advanceAndRegenerate(); }
     }
-    function updateScore(){ $score.textContent = String(score); if (score > high){ high = score; localStorage.setItem("chessrun-highscore", String(high)); updateHigh(); } }
+    function updateScore(){
+      $score.textContent = String(score);
+      if (score > high){ high = score; localStorage.setItem("chessrun-highscore", String(high)); updateHigh(); }
+    }
     function updateHigh(){ $high.textContent = "Best: " + String(high); }
-    function applyProgression(){ let newType = player.type; for (let i = PROGRESSION.length - 1; i >= 0; i--){ if (score >= PROGRESSION[i].score){ newType = PROGRESSION[i].type; break; } }
-      if (newType !== player.type){ player.type = newType; placePiece(player.row, player.col, { color: WHITE, type: player.type }); } }
-    function advanceAndRegenerate(){ $board.classList.add("advance"); const onAnimEnd = () => {
-        $board.removeEventListener("animationend", onAnimEnd); $board.classList.remove("advance");
-        const newBoard = createEmptyBoard(); for (let c = 0; c < BOARD_COLS; c++){ newBoard[0][c] = board[player.row][c] ? { ...board[player.row][c] } : null; }
-        board = newBoard; player.row = 0; generateSegmentWithTruthPathAndChoices(); renderBoard(); };
-      $board.addEventListener("animationend", onAnimEnd); }
+    function applyProgression(){
+      let newType = player.type;
+      for (let i = PROGRESSION.length - 1; i >= 0; i--){ if (score >= PROGRESSION[i].score){ newType = PROGRESSION[i].type; break; } }
+      if (newType !== player.type){ player.type = newType; placePiece(player.row, player.col, { color: WHITE, type: player.type }); }
+    }
+    function advanceAndRegenerate(){
+      $board.classList.add("advance");
+      const onAnimEnd = () => {
+        $board.removeEventListener("animationend", onAnimEnd);
+        $board.classList.remove("advance");
+        const newBoard = createEmptyBoard();
+        for (let c = 0; c < BOARD_COLS; c++){ newBoard[0][c] = board[player.row][c] ? { ...board[player.row][c] } : null; }
+        board = newBoard; player.row = 0;
+        generateSegmentWithTruthPathAndChoices();
+        renderBoard();
+      };
+      $board.addEventListener("animationend", onAnimEnd);
+    }
 
-    function getLegalMoves(type, r, c){ const moves = []; const add = (rr, cc) => { if (!inBounds(rr, cc)) return; const d = board[rr][cc]; if (!d || d.color === BLACK) moves.push({ toRow: rr, toCol: cc }); };
-      if (type === "P"){ const f1 = r + 1, f2 = r + 2; if (inBounds(f1, c) && !board[f1][c]) add(f1, c);
+    function getLegalMoves(type, r, c){
+      const moves = []; const add = (rr, cc) => { if (!inBounds(rr, cc)) return; const d = board[rr][cc]; if (!d || d.color === BLACK) moves.push({ toRow: rr, toCol: cc }); };
+      if (type === "P"){
+        const f1 = r + 1, f2 = r + 2;
+        if (inBounds(f1, c) && !board[f1][c]) add(f1, c);
         if (r === 0 && inBounds(f2, c) && !board[f1][c] && !board[f2][c]) add(f2, c);
         if (inBounds(f1, c-1) && isBlackAt(f1, c-1)) add(f1, c-1);
         if (inBounds(f1, c+1) && isBlackAt(f1, c+1)) add(f1, c+1);
-      } else if (type === "K"){ for (let dr = -1; dr <= 1; dr++){ for (let dc = -1; dc <= 1; dc++){ if (dr||dc) add(r+dr,c+dc); } }
-      } else if (type === "N"){ [[ 2, 1],[ 2,-1],[-2, 1],[-2,-1],[ 1, 2],[ 1,-2],[-1, 2],[-1,-2]].forEach(([dr,dc])=>add(r+dr,c+dc));
+      } else if (type === "K"){
+        for (let dr = -1; dr <= 1; dr++){ for (let dc = -1; dc <= 1; dc++){ if (dr||dc) add(r+dr,c+dc); } }
+      } else if (type === "N"){
+        [[ 2, 1],[ 2,-1],[-2, 1],[-2,-1],[ 1, 2],[ 1,-2],[-1, 2],[-1,-2]].forEach(([dr,dc])=>add(r+dr,c+dc));
       } else if (type === "B"){ ray(r,c,[[1,1],[1,-1],[-1,1],[-1,-1]],moves);
       } else if (type === "R"){ ray(r,c,[[1,0],[-1,0],[0,1],[0,-1]],moves);
       } else if (type === "Q"){ ray(r,c,[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]],moves); }
-      return moves; }
-    function ray(r,c,dirs,out){ for (const [dr,dc] of dirs){ let rr=r+dr, cc=c+dc;
+      return moves;
+    }
+    function ray(r,c,dirs,out){
+      for (const [dr,dc] of dirs){ let rr=r+dr, cc=c+dc;
         while (inBounds(rr,cc)){ const d = board[rr][cc]; if (!d) out.push({toRow:rr,toCol:cc}); else { if (d.color===BLACK) out.push({toRow:rr,toCol:cc}); break; } rr+=dr; cc+=dc; }
-      } }
+      }
+    }
 
-    function renderBoard(){ const frag = document.createDocumentFragment(); $board.innerHTML = "";
-      for (let vRow = BOARD_ROWS - 1; vRow >= 0; vRow--){ for (let c = 0; c < BOARD_COLS; c++){
-          const sq = document.createElement("div"); sq.className = "sq " + (((vRow + c) % 2 === 0) ? "light" : "dark");
+    function renderBoard(){
+      const frag = document.createDocumentFragment(); $board.innerHTML = "";
+      for (let vRow = BOARD_ROWS - 1; vRow >= 0; vRow--){
+        for (let c = 0; c < BOARD_COLS; c++){
+          const sq = document.createElement("div");
+          sq.className = "sq " + (((vRow + c) % 2 === 0) ? "light" : "dark");
           sq.dataset.row = String(vRow); sq.dataset.col = String(c);
-          const p = board[vRow][c]; if (p){ const span = document.createElement("span"); span.className = "piece " + (p.color === WHITE ? "white" : "black");
+          const p = board[vRow][c];
+          if (p){ const span = document.createElement("span"); span.className = "piece " + (p.color === WHITE ? "white" : "black");
             span.textContent = p.color === WHITE ? WHITE_SYM[p.type] : BLACK_SYM[p.type]; sq.appendChild(span); }
-          if (highlighted.has(keyOf(vRow,c))) sq.classList.add("highlight"); frag.appendChild(sq);
-      }} $board.appendChild(frag); }
+          if (highlighted.has(keyOf(vRow,c))) sq.classList.add("highlight");
+          frag.appendChild(sq);
+        }
+      }
+      $board.appendChild(frag);
+    }
 
     function endGame(){ gameOver = true; showModal("Game Over", "Score: " + String(score)); }
     function showModal(title, text){ document.getElementById("modalTitle").textContent = title; $modalText.textContent = text; $modal.classList.add("show"); }
@@ -433,7 +595,9 @@
     function randomChoice(bag){ return bag[Math.floor(Math.random() * bag.length)]; }
     function shuffle(a){ for (let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } }
     function shuffleCopy(a){ const b=a.slice(); shuffle(b); return b; }
-    function countBlackPieces(){ let n = 0; for (let r=0;r<BOARD_ROWS;r++){ for (let c=0;c<BOARD_COLS;c++){ const p = board[r][c]; if (p && p.color === BLACK) n++; } } return n; }
+    function countBlackPieces(){
+      let n = 0; for (let r=0;r<BOARD_ROWS;r++){ for (let c=0;c<BOARD_COLS;c++){ const p = board[r][c]; if (p && p.color === BLACK) n++; } } return n;
+    }
   </script>
 </body>
-</html>
+  </html>
