@@ -13,7 +13,7 @@
       --square-size: calc(100vw / var(--board-cols));
       --light: #ffffff;  /* board light squares: white */
       --dark:  #000000;  /* board dark squares: black */
-      --text:  #2b1a10;
+      --text:  #D4AF37; /* UPDATED: all text gold */
       --danger: #1976D2; /* killer highlight is BLUE now */
 
       --above-gap: 10px;
@@ -24,7 +24,8 @@
     }
 
     html,body{
-      margin:0; padding:0; background:var(--dark); color:var(--text);
+      margin:0; padding:0; background:var(--dark);
+      color: var(--text); /* NEW: set global text color to gold */
       font-family: "Boogaloo", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
       touch-action: none;
     }
@@ -116,7 +117,8 @@
     }
     .controls button{
       background: transparent; border:none; padding:10px 0;
-      color:#1f140c; font-weight:700; font-size: clamp(18px, 5vw, 22px);
+      color: var(--text); /* UPDATED: button text gold */
+      font-weight:700; font-size: clamp(18px, 5vw, 22px);
       cursor:pointer; font-family: "Boogaloo", system-ui;
     }
     .controls button:active{ opacity:0.8; }
@@ -243,35 +245,38 @@
 
     const STAGE_INDEX = { P:0, K:1, N:2, B:3, R:4, Q:5 };
 
+    /* UPDATED: Opponent weights to favor sliders and queens */
     const OPP_WEIGHTS = {
       near: [
-        { p:0.38, k:0.24, n:0.20, b:0.10, r:0.07, q:0.01 }, // Pawn
-        { p:0.34, k:0.22, n:0.20, b:0.12, r:0.08, q:0.04 }, // King
-        { p:0.30, k:0.20, n:0.18, b:0.15, r:0.12, q:0.05 }, // Knight
-        { p:0.26, k:0.18, n:0.16, b:0.18, r:0.16, q:0.06 }, // Bishop
-        { p:0.22, k:0.16, n:0.16, b:0.20, r:0.18, q:0.08 }, // Rook
-        { p:0.18, k:0.14, n:0.14, b:0.22, r:0.20, q:0.12 }, // Queen
+        { p:0.24, k:0.16, n:0.18, b:0.18, r:0.18, q:0.06 },
+        { p:0.22, k:0.14, n:0.16, b:0.20, r:0.20, q:0.08 },
+        { p:0.20, k:0.12, n:0.16, b:0.22, r:0.22, q:0.08 },
+        { p:0.18, k:0.10, n:0.14, b:0.24, r:0.24, q:0.10 },
+        { p:0.16, k:0.08, n:0.12, b:0.24, r:0.26, q:0.14 },
+        { p:0.12, k:0.06, n:0.10, b:0.22, r:0.26, q:0.24 },
       ],
       far: [
-        { p:0.34, k:0.22, n:0.18, b:0.12, r:0.10, q:0.04 }, // Pawn
-        { p:0.30, k:0.20, n:0.18, b:0.16, r:0.14, q:0.02 }, // King
-        { p:0.28, k:0.18, n:0.16, b:0.18, r:0.16, q:0.04 }, // Knight
-        { p:0.24, k:0.16, n:0.15, b:0.20, r:0.18, q:0.07 }, // Bishop
-        { p:0.22, k:0.14, n:0.14, b:0.22, r:0.20, q:0.08 }, // Rook
-        { p:0.18, k:0.12, n:0.12, b:0.24, r:0.22, q:0.12 }, // Queen
+        { p:0.22, k:0.14, n:0.18, b:0.20, r:0.20, q:0.06 },
+        { p:0.20, k:0.12, n:0.16, b:0.22, r:0.22, q:0.08 },
+        { p:0.18, k:0.10, n:0.16, b:0.24, r:0.24, q:0.08 },
+        { p:0.16, k:0.08, n:0.14, b:0.26, r:0.26, q:0.10 },
+        { p:0.14, k:0.08, n:0.12, b:0.26, r:0.26, q:0.14 },
+        { p:0.10, k:0.06, n:0.10, b:0.24, r:0.26, q:0.24 },
       ]
     };
 
+    /* UPDATED: Increased opposition counts per stage */
     const OPP_COUNTS = [
-      [10, 16],   // Pawn
-      [12, 18],   // King
-      [14, 20],   // Knight
-      [15, 22],   // Bishop
-      [16, 24],   // Rook
-      [18, 26],   // Queen
+      [12, 18],   // Pawn
+      [14, 20],   // King
+      [16, 22],   // Knight
+      [18, 24],   // Bishop
+      [20, 26],   // Rook
+      [22, 28],   // Queen
     ];
 
-    const CONSTRICTION = [0.35, 0.5, 0.6, 0.7, 0.8, 0.85];
+    /* UPDATED: Stronger constriction */
+    const CONSTRICTION = [0.55, 0.65, 0.75, 0.85, 0.90, 0.95];
 
     function currentStage(){ return STAGE_INDEX[player.type] ?? 0; }
 
@@ -421,9 +426,13 @@
         if (!ok){ attempts++; continue; }
 
         if (player.type === "P"){
-          const successTwo = ensureTwoPawnDecisionEvents(protectedSquares);
-          if (!successTwo){ attempts++; continue; }
+          const successThree = ensurePawnDecisionEventsCount(protectedSquares, 3);
+          if (!successThree){ attempts++; continue; }
         }
+
+        const detourTarget = Math.max(1, Math.min(stage, 3));
+        const detoursOk = ensureDetoursOnPath(protectedSquares, detourTarget);
+        if (!detoursOk){ attempts++; continue; }
 
         const targetOpp = randInt(minOpp, maxOpp);
         placeOppositionWithConstraints(targetOpp, protectedSquares);
@@ -607,6 +616,82 @@
       }
 
       return added === 2;
+    }
+
+    function ensurePawnDecisionEventsCount(protectedSquares, count){
+      if (!ensureTwoPawnDecisionEvents(protectedSquares)) return false;
+      let needed = Math.max(0, count - 2);
+      if (needed === 0) return true;
+
+      const res = bfsSafePath(board, "P");
+      if (!res || !res.path || !res.path.length) return false;
+
+      const path = [...res.path].filter(p => p.r >= 1 && p.r <= TOP_ROW - 2);
+      for (let i = path.length - 1; i > 0; i--){
+        const j = Math.floor(Math.random() * (i + 1));
+        [path[i], path[j]] = [path[j], path[i]];
+      }
+
+      for (const p of path){
+        if (needed <= 0) break;
+        const r = p.r, c = p.c;
+        const choices = [[r+1, c-1], [r+1, c+1]];
+        for (const [rr, cc] of choices){
+          if (!inBounds(rr, cc) || board[rr][cc]) continue;
+          const weights = OPP_WEIGHTS.near[currentStage()];
+          const t = pickFromSubset(weights, ["p","n","b"]);
+          if (attacksAnyProtected(rr, cc, t, protectedSquares)) continue;
+
+          board[rr][cc] = { color: BLACK, type: t };
+          guardSquareFromAttackWithImmutables(rr, cc, mandatoryRookKeys);
+
+          const res2 = bfsSafePath(board, "P");
+          if (res2 && res2.path && res2.path.length){
+            needed--; break;
+          } else {
+            board[rr][cc] = null;
+          }
+        }
+      }
+      return needed === 0;
+    }
+
+    function ensureDetoursOnPath(protectedSquares, minCount){
+      const res = bfsSafePath(board, player.type);
+      if (!res || !res.path || !res.path.length) return false;
+
+      const path = res.path.filter(p => p.r >= 2 && p.r <= TOP_ROW - 2);
+      for (let i = path.length - 1; i > 0; i--){
+        const j = Math.floor(Math.random() * (i + 1));
+        [path[i], path[j]] = [path[j], path[i]];
+      }
+
+      let added = 0;
+      const stage = currentStage();
+      const sliderPref = ["q","r","b"];
+
+      for (const p of path){
+        if (added >= minCount) break;
+        const r = p.r, c = p.c;
+        const neighbors = [[r+1, c],[r+1, c+1],[r+1, c-1],[r, c+1],[r, c-1]];
+        for (const [rr, cc] of neighbors){
+          if (!inBounds(rr, cc) || board[rr][cc]) continue;
+          const weights = OPP_WEIGHTS.far[stage];
+          const t = pickFromSubset(weights, sliderPref);
+          if (attacksAnyProtected(rr, cc, t, protectedSquares)) continue;
+
+          board[rr][cc] = { color: BLACK, type: t };
+          guardSquareFromAttackWithImmutables(rr, cc, mandatoryRookKeys);
+
+          const res2 = bfsSafePath(board, player.type);
+          if (res2 && res2.path && res2.path.length){
+            added++; break;
+          } else {
+            board[rr][cc] = null;
+          }
+        }
+      }
+      return added >= minCount;
     }
 
     function placeOppositionWithConstraints(targetCount, protectedSquares){
