@@ -351,10 +351,12 @@
       const totalScore = s.totalScore + (finalScore||0);
       const totalTakes = s.totalTakes + (finalTakes||0);
       const mostTakes  = Math.max(s.mostTakes, (finalTakes||0));
+      const highScore  = Math.max(s.highScore, (finalScore||0));
       localStorage.setItem("chessrun-total-games", String(totalGames));
       localStorage.setItem("chessrun-total-score", String(totalScore));
       localStorage.setItem("chessrun-total-takes", String(totalTakes));
       localStorage.setItem("chessrun-most-takes", String(mostTakes));
+      localStorage.setItem("chessrun-highscore", String(highScore));
     }
     function renderStats(){
       const s = loadStats();
