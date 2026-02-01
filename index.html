@@ -134,15 +134,12 @@
     .menu::before{
       content:"";
       position:absolute; inset:0;
-      background:
-        conic-gradient(from 45deg, var(--light) 0 90deg, var(--dark) 90deg 180deg, var(--light) 180deg 270deg, var(--dark) 270deg 360deg);
-      background-size: 180px 180px;
-      background-position: center;
+      background: #D4AF37;
     }
     .menu-content{
       position:relative; z-index:1;
       display:flex; flex-direction:column; align-items:center; justify-content:center;
-      gap:24px; text-align:center; color:var(--text); font-family: "Boogaloo", system-ui;
+      gap:24px; text-align:center; color:#000000; font-family: "Boogaloo", system-ui;
     }
     .menu-title{
       font-size: clamp(32px, 10vw, 64px);
@@ -159,6 +156,22 @@
       box-shadow: 0 6px 0 #b3925e, 0 10px 18px rgba(0,0,0,0.18);
     }
     .play-btn:active{ transform: translateY(1px); box-shadow: 0 5px 0 #b3925e, 0 6px 12px rgba(0,0,0,0.18); }
+
+    /* Stats overlay */
+    .stats{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:75; }
+    .stats.show{ display:flex; }
+    .stats::before{ content:""; position:absolute; inset:0; background:#D4AF37; }
+    .stats-content{
+      position:relative; z-index:1;
+      display:flex; flex-direction:column; gap:18px; align-items:center;
+      color: #000000;
+    }
+    .stats-list{ display:flex; flex-direction:column; gap:10px; }
+    .stat-row{
+      display:flex; justify-content:space-between; gap:20px;
+      min-width:min(420px, 92vw);
+      font-size: clamp(18px, 5vw, 22px);
+    }
   </style>
 </head>
 <body>
@@ -184,6 +197,23 @@
     <div class="menu-content">
       <div id="menuTitle" class="menu-title">Chess Run</div>
       <button id="playBtn" class="play-btn" type="button">Play</button>
+      <button id="statsBtn" class="play-btn" type="button">Stats</button>
+    </div>
+  </div>
+
+  <div id="stats" class="stats" role="dialog" aria-modal="true" aria-labelledby="statsTitle">
+    <div class="stats-content">
+      <div id="statsTitle" class="menu-title">Stats</div>
+      <div class="stats-list">
+        <div class="stat-row"><span>Total games</span><span id="statTotalGames">0</span></div>
+        <div class="stat-row"><span>High score</span><span id="statHigh">0</span></div>
+        <div class="stat-row"><span>Total score</span><span id="statTotalScore">0</span></div>
+        <div class="stat-row"><span>Average score</span><span id="statAvgScore">0</span></div>
+        <div class="stat-row"><span>Most takes</span><span id="statMostTakes">0</span></div>
+        <div class="stat-row"><span>Total takes</span><span id="statTotalTakes">0</span></div>
+        <div class="stat-row"><span>Average takes</span><span id="statAvgTakes">0</span></div>
+      </div>
+      <button id="statsBackBtn" class="play-btn" type="button">Menu</button>
     </div>
   </div>
 
@@ -304,6 +334,43 @@
       return subset[0];
     }
 
+    // Stats tracking
+    function loadStats(){
+      const totalGames = parseInt(localStorage.getItem("chessrun-total-games")||"0",10);
+      const totalScore = parseInt(localStorage.getItem("chessrun-total-score")||"0",10);
+      const totalTakes = parseInt(localStorage.getItem("chessrun-total-takes")||"0",10);
+      const mostTakes  = parseInt(localStorage.getItem("chessrun-most-takes")||"0",10);
+      const highScore  = parseInt(localStorage.getItem("chessrun-highscore")||"0",10);
+      const avgScore = totalGames ? Math.round(totalScore / totalGames) : 0;
+      const avgTakes = totalGames ? Math.round(totalTakes / totalGames) : 0;
+      return { totalGames, totalScore, totalTakes, mostTakes, highScore, avgScore, avgTakes };
+    }
+    function updateStatsOnGameEnd(finalScore, finalTakes){
+      const s = loadStats();
+      const totalGames = s.totalGames + 1;
+      const totalScore = s.totalScore + (finalScore||0);
+      const totalTakes = s.totalTakes + (finalTakes||0);
+      const mostTakes  = Math.max(s.mostTakes, (finalTakes||0));
+      const highScore  = Math.max(s.highScore, (finalScore||0));
+      localStorage.setItem("chessrun-total-games", String(totalGames));
+      localStorage.setItem("chessrun-total-score", String(totalScore));
+      localStorage.setItem("chessrun-total-takes", String(totalTakes));
+      localStorage.setItem("chessrun-most-takes", String(mostTakes));
+      localStorage.setItem("chessrun-highscore", String(highScore));
+    }
+    function renderStats(){
+      const s = loadStats();
+      document.getElementById("statTotalGames").textContent = String(s.totalGames);
+      document.getElementById("statHigh").textContent = String(s.highScore);
+      document.getElementById("statTotalScore").textContent = String(s.totalScore);
+      document.getElementById("statAvgScore").textContent = String(s.avgScore);
+      document.getElementById("statMostTakes").textContent = String(s.mostTakes);
+      document.getElementById("statTotalTakes").textContent = String(s.totalTakes);
+      document.getElementById("statAvgTakes").textContent = String(s.avgTakes);
+    }
+    function showStats(){ renderStats(); document.getElementById("stats").classList.add("show"); }
+    function hideStats(){ document.getElementById("stats").classList.remove("show"); }
+
     // Init
     init();
     function init(){
@@ -316,6 +383,8 @@
       document.getElementById("restartBtn").addEventListener("click", restart);
       document.getElementById("menuBtn").addEventListener("click", showMenu);
       document.getElementById("playBtn").addEventListener("click", hideMenu);
+      document.getElementById("statsBtn").addEventListener("click", showStats);
+      document.getElementById("statsBackBtn").addEventListener("click", function(){ hideStats(); showMenu(); });
 
       // Tap-to-move
       $board.addEventListener("click", onBoardClick);
@@ -1488,6 +1557,7 @@
     function endGame(){
       gameOver = true;
       inGameOverSequence = false;
+      updateStatsOnGameEnd(score, captures);
       showModal("Game Over", "Score: " + String(score));
     }
     function showModal(title, text){
