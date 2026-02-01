@@ -160,7 +160,7 @@
     /* Stats overlay - bottom sheet */
     .stats{ position:fixed; inset:0; display:none; z-index:75; }
     .stats.show{ display:block; }
-    .stats-backdrop{ position:fixed; top:0; left:0; right:0; height:50vh; background: transparent; }
+    .stats-backdrop{ position:fixed; inset:0; background: transparent; }
     .stats-sheet{
       position:fixed; left:0; right:0; bottom:0; height:50vh; background:#000; color: var(--text);
       border-top-left-radius:18px; border-top-right-radius:18px;
@@ -172,7 +172,7 @@
     }
     .stats-sheet::before{ left:8px; }
     .stats-sheet::after{ right:8px; }
-    /* Black edge thickness equals accent line offset (8px), providing equal black margin to the sheet boundary */
+    /* Gold accent vertical lines positioned 8px from sheet edge, creating equal spacing */
     
     /* Smaller, evenly spaced text; title same size as entries */
     .stats-title{ font-size: clamp(14px, 4vw, 18px); font-weight:800; text-align:center; margin-bottom:12px; }
