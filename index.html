@@ -157,21 +157,27 @@
     }
     .play-btn:active{ transform: translateY(1px); box-shadow: 0 5px 0 #b3925e, 0 6px 12px rgba(0,0,0,0.18); }
 
-    /* Stats overlay */
-    .stats{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:75; }
-    .stats.show{ display:flex; }
-    .stats::before{ content:""; position:absolute; inset:0; background:#D4AF37; }
-    .stats-content{
-      position:relative; z-index:1;
-      display:flex; flex-direction:column; gap:18px; align-items:center;
-      color: #000000;
+    /* Stats overlay - bottom sheet */
+    .stats{ position:fixed; inset:0; display:none; z-index:75; }
+    .stats.show{ display:block; }
+    .stats-backdrop{ position:fixed; top:0; left:0; right:0; height:50vh; background: transparent; }
+    .stats-sheet{
+      position:fixed; left:0; right:0; bottom:0; height:50vh; background:#000; color: var(--text);
+      border-top-left-radius:18px; border-top-right-radius:18px;
+      padding: 14px 24px;
     }
+    /* Gold accent vertical lines just inside the pop-up, equal to black edge thickness */
+    .stats-sheet::before, .stats-sheet::after{
+      content:""; position:absolute; top:0; bottom:0; width:4px; background:#D4AF37;
+    }
+    .stats-sheet::before{ left:8px; }
+    .stats-sheet::after{ right:8px; }
+    /* Black edge thickness equals accent line offset (8px), providing equal black margin to the sheet boundary */
+    
+    /* Smaller, evenly spaced text; title same size as entries */
+    .stats-title{ font-size: clamp(14px, 4vw, 18px); font-weight:800; text-align:center; margin-bottom:12px; }
     .stats-list{ display:flex; flex-direction:column; gap:10px; }
-    .stat-row{
-      display:flex; justify-content:space-between; gap:20px;
-      min-width:min(420px, 92vw);
-      font-size: clamp(18px, 5vw, 22px);
-    }
+    .stat-row{ display:flex; justify-content:space-between; font-size: clamp(14px, 4vw, 18px); }
   </style>
 </head>
 <body>
@@ -202,8 +208,9 @@
   </div>
 
   <div id="stats" class="stats" role="dialog" aria-modal="true" aria-labelledby="statsTitle">
-    <div class="stats-content">
-      <div id="statsTitle" class="menu-title">Stats</div>
+    <div id="statsBackdrop" class="stats-backdrop" aria-hidden="true"></div>
+    <div id="statsSheet" class="stats-sheet">
+      <div id="statsTitle" class="stats-title">Stats</div>
       <div class="stats-list">
         <div class="stat-row"><span>Total games</span><span id="statTotalGames">0</span></div>
         <div class="stat-row"><span>High score</span><span id="statHigh">0</span></div>
@@ -213,7 +220,6 @@
         <div class="stat-row"><span>Total takes</span><span id="statTotalTakes">0</span></div>
         <div class="stat-row"><span>Average takes</span><span id="statAvgTakes">0</span></div>
       </div>
-      <button id="statsBackBtn" class="play-btn" type="button">Menu</button>
     </div>
   </div>
 
@@ -384,7 +390,8 @@
       document.getElementById("menuBtn").addEventListener("click", showMenu);
       document.getElementById("playBtn").addEventListener("click", hideMenu);
       document.getElementById("statsBtn").addEventListener("click", showStats);
-      document.getElementById("statsBackBtn").addEventListener("click", function(){ hideStats(); showMenu(); });
+      document.getElementById("statsBackdrop").addEventListener("click", hideStats);
+      document.getElementById("statsSheet").addEventListener("click", function(e){ e.stopPropagation(); });
 
       // Tap-to-move
       $board.addEventListener("click", onBoardClick);
