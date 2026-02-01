@@ -210,6 +210,10 @@
       {score: 300, type: "Q"}
     ];
 
+    // Board-based progression configuration
+    const PIECE_ORDER = ["P", "K", "N", "B", "R", "Q"];
+    const BOARD_TARGETS = { P:2, K:3, N:4, B:5, R:6, Q:7 };
+
     // White uses black-piece glyphs but colored via CSS; pawn uses SVG
     const WHITE_SYM = { K:"♚", N:"♞", B:"♝", R:"♜", Q:"♛" };
     const BLACK_SYM = { k:"♚", n:"♞", b:"♝", r:"♜", q:"♛" };
@@ -224,6 +228,7 @@
     let inGameOverSequence = false;
     let isAdvancing = false; // lock during scroll
     let captures = 0;
+    let boardsInCurrentStage = 0;
 
     // Set of immutable black pieces (including mandatory rooks and event pieces)
     let mandatoryRookKeys = new Set();
@@ -276,6 +281,11 @@
 
     function currentStage(){ return STAGE_INDEX[player.type] ?? 0; }
 
+    function nextPiece(type){
+      const i = PIECE_ORDER.indexOf(type);
+      return PIECE_ORDER[(i + 1) % PIECE_ORDER.length];
+    }
+
     function pickByWeights(weights){
       let r = Math.random();
       for (const t of ["p","k","n","b","r","q"]){
@@ -327,6 +337,7 @@
       gameOver = false;
       inGameOverSequence = false;
       isAdvancing = false;
+      boardsInCurrentStage = 0;
       resetBoardForNewGame();
       renderBoard();
       updateScore();
@@ -1168,7 +1179,6 @@
         score += (toRow - maxRowReached);
         maxRowReached = toRow;
         updateScore();
-        applyProgression();
       }
 
       const dest = board[toRow][toCol];
@@ -1187,6 +1197,12 @@
       }
 
       if (player.row === TOP_ROW){
+        boardsInCurrentStage++;
+        if (boardsInCurrentStage >= BOARD_TARGETS[player.type]){
+          player.type = nextPiece(player.type);
+          boardsInCurrentStage = 0;
+          placePiece(player.row, player.col, { color: WHITE, type: player.type });
+        }
         smoothAdvanceAndRegenerate();
       }
     }
