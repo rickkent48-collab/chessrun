@@ -13,8 +13,8 @@
       --square-size: calc(100vw / var(--board-cols));
       --light: #ffffff;  /* board light squares: white */
       --dark:  #000000;  /* board dark squares: black */
-      --text:  #2b1a10;
-      --danger: #1976D2; /* killer highlight is BLUE now */
+      --text:  #D4AF37;
+      --danger: #D32F2F; /* killer highlight is RED now */
 
       --above-gap: 10px;
       --below-gap: calc(var(--above-gap) * 2);
@@ -40,6 +40,7 @@
       width:100vw;
       display:grid; grid-template-columns: 1fr auto 1fr; align-items:center;
       padding:0 8px; box-sizing:border-box; gap:0;
+      color:var(--text);
     }
     .captures, .score, .high{
       font-weight:700; letter-spacing:0.3px;
@@ -99,11 +100,11 @@
     .light{ background: var(--light); }
     .dark{  background: var(--dark); }
 
-    /* Piece visuals: user (white) rich royal gold, opponent (black) rich bold red */
+    /* Piece visuals: user (white) rich royal gold, opponent (black) rich bold blue */
     .piece{ position:relative; z-index:2; font-family: "Boogaloo", system-ui; }
     .white{ color:#D4AF37; text-shadow:none; }  /* royal gold (slightly darker, still bright) */
-    .black{ color:#D32F2F; text-shadow:none; }  /* rich bold red (slightly darker, still bright) */
-    .danger{ color: var(--danger) !important; } /* killer highlight is BLUE now */
+    .black{ color:#1976D2; text-shadow:none; }  /* rich bold blue (slightly darker, still bright) */
+    .danger{ color: var(--danger) !important; } /* killer highlight is RED now */
     .piece svg{ width:calc(var(--square-size) * 0.7); height:calc(var(--square-size) * 0.7); }
 
     /* Under-board controls */
@@ -116,7 +117,7 @@
     }
     .controls button{
       background: transparent; border:none; padding:10px 0;
-      color:#1f140c; font-weight:700; font-size: clamp(18px, 5vw, 22px);
+      color:var(--text); font-weight:700; font-size: clamp(18px, 5vw, 22px);
       cursor:pointer; font-family: "Boogaloo", system-ui;
     }
     .controls button:active{ opacity:0.8; }
@@ -141,7 +142,7 @@
     .menu-content{
       position:relative; z-index:1;
       display:flex; flex-direction:column; align-items:center; justify-content:center;
-      gap:24px; text-align:center; color:#1f140c; font-family: "Boogaloo", system-ui;
+      gap:24px; text-align:center; color:var(--text); font-family: "Boogaloo", system-ui;
     }
     .menu-title{
       font-size: clamp(32px, 10vw, 64px);
@@ -153,7 +154,7 @@
     .play-btn{
       padding: 14px 28px; border-radius:14px; border:none; cursor:pointer;
       font-size: clamp(18px, 6vw, 24px); font-weight:800;
-      color:#3a2a18; font-family: "Boogaloo", system-ui;
+      color:var(--text); font-family: "Boogaloo", system-ui;
       background: linear-gradient(180deg, #f8e9c8 0%, #e8d4a8 100%);
       box-shadow: 0 6px 0 #b3925e, 0 10px 18px rgba(0,0,0,0.18);
     }
@@ -1443,11 +1444,11 @@
       return span;
     }
 
-    // Pawn SVG; user (white) = rich royal gold, opposition (black) = rich bold red; killer highlight = BLUE
+    // Pawn SVG; user (white) = rich royal gold, opposition (black) = rich bold blue; killer highlight = RED
     function pawnSVG(color, highlight=false){
       const isWhite = (color === WHITE);
-      const fill = isWhite ? "#D4AF37" : (highlight ? "#1976D2" : "#D32F2F");
-      const stroke = isWhite ? "#A67C00" : (highlight ? "#0D47A1" : "#8B0000");
+      const fill = isWhite ? "#D4AF37" : (highlight ? "#D32F2F" : "#1976D2");
+      const stroke = isWhite ? "#A67C00" : (highlight ? "#8B0000" : "#0D47A1");
       return `
         <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
           <circle cx="50" cy="24" r="14" fill="${fill}" stroke="${stroke}" stroke-width="2"/>
