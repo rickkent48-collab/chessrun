@@ -157,19 +157,47 @@
     }
     .play-btn:active{ transform: translateY(1px); box-shadow: 0 5px 0 #b3925e, 0 6px 12px rgba(0,0,0,0.18); }
 
-    /* Stats overlay */
-    .stats{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:75; }
+    /* Stats bottom-sheet popup */
+    .stats{ position:fixed; left:0; right:0; bottom:0; height:50vh; display:none; align-items:flex-start; justify-content:center; z-index:75; }
     .stats.show{ display:flex; }
-    .stats::before{ content:""; position:absolute; inset:0; background:#D4AF37; }
+    /* Remove full-screen gold backdrop */
+    .stats::before{ content:none; }
+    
+    /* Popup box */
     .stats-content{
-      position:relative; z-index:1;
-      display:flex; flex-direction:column; gap:18px; align-items:center;
-      color: #000000;
+      position:relative;
+      width:100%; /* full width for edge-to-edge bottom line */
+      height:100%;  /* full height of the bottom sheet */
+      background:#000000;
+      border:8px solid #000000; /* black edge thickness T */
+      border-top-left-radius:16px;
+      border-top-right-radius:16px;
+      border-bottom-left-radius:0;
+      border-bottom-right-radius:0;
+      box-sizing:border-box;
+      display:flex; flex-direction:column; align-items:center; gap:18px; text-align:center;
+      color: var(--text); font-family: "Boogaloo", system-ui;
+      overflow:hidden; /* ensure inner accent respects rounded corners */
+      padding-top:24px;
     }
-    .stats-list{ display:flex; flex-direction:column; gap:10px; }
+    /* Inner gold accent line, same thickness as black edge */
+    .stats-content::after{
+      content:"";
+      position:absolute;
+      left:8px; right:8px; top:8px; bottom:8px; /* inset equals border thickness */
+      border:8px solid #D4AF37; /* gold accent */
+      border-top-left-radius:12px; /* slightly smaller radius to align visually inside */
+      border-top-right-radius:12px;
+      border-bottom-left-radius:0;
+      border-bottom-right-radius:0;
+      pointer-events:none;
+    }
+    /* Ensure content appears above the gold accent border */
+    .stats-content > *{ position:relative; z-index:1; }
+    
+    .stats-list{ display:flex; flex-direction:column; gap:10px; width:min(520px, 92vw); margin-top:8px; }
     .stat-row{
       display:flex; justify-content:space-between; gap:20px;
-      min-width:min(420px, 92vw);
       font-size: clamp(18px, 5vw, 22px);
     }
   </style>
