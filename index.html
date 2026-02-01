@@ -317,11 +317,6 @@
       document.getElementById("menuBtn").addEventListener("click", showMenu);
       document.getElementById("playBtn").addEventListener("click", hideMenu);
 
-      // Drag-and-drop
-      $board.addEventListener("pointerdown", onPointerDown);
-      window.addEventListener("pointermove", onPointerMove);
-      window.addEventListener("pointerup", onPointerUp);
-
       // Tap-to-move
       $board.addEventListener("click", onBoardClick);
 
@@ -633,6 +628,14 @@
         current += placeOppFromCandidates(far, targetCount - current, forbidden);
       }
 
+      // Safety cleanup: remove any black pieces that ended up on TOP_ROW
+      for (let c = 0; c < BOARD_COLS; c++){
+        const p = board[TOP_ROW][c];
+        if (p && p.color === BLACK){
+          board[TOP_ROW][c] = null;
+        }
+      }
+
       while (countBlackPieces() > targetCount){
         const list = [];
         for (let r=1;r<=TOP_ROW;r++){
@@ -653,7 +656,7 @@
 
     function collectOppCandidates(forbidden, bias){
       const cand = [];
-      for (let r=1;r<=TOP_ROW;r++){
+      for (let r=1;r<=TOP_ROW-1;r++){
         for (let c=0;c<BOARD_COLS;c++){
           if (board[r][c]) continue;
           const k = keyOf(r,c);
@@ -703,7 +706,7 @@
         const type = board[firstRow][col].type;
         if (attacksAnyProtected(firstRow, col, type, protectedSquares)){
           let moved = false;
-          for (let rr = firstRow + 1; rr <= TOP_ROW; rr++){
+          for (let rr = firstRow + 1; rr <= TOP_ROW - 1; rr++){
             if (!board[rr][col]){
               board[rr][col] = { color: BLACK, type };
               board[firstRow][col] = null;
