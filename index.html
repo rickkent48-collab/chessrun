@@ -158,25 +158,36 @@
     .play-btn:active{ transform: translateY(1px); box-shadow: 0 5px 0 #b3925e, 0 6px 12px rgba(0,0,0,0.18); }
 
     /* Stats overlay - bottom sheet */
+    :root{
+      --accent-w: 4px;        /* gold line thickness */
+      --accent-gap: 8px;      /* black edge spacing (equal to line offset) */
+      --sheet-radius: 18px;
+    }
+    
     .stats{ position:fixed; inset:0; display:none; z-index:75; }
     .stats.show{ display:block; }
-    .stats-backdrop{ position:fixed; inset:0; background: transparent; }
+    .stats-backdrop{ position:fixed; top:0; left:0; right:0; height:50vh; background: transparent; }
     .stats-sheet{
       position:fixed; left:0; right:0; bottom:0; height:50vh; background:#000; color: var(--text);
-      border-top-left-radius:18px; border-top-right-radius:18px;
-      padding: 14px 24px;
+      border-top-left-radius: var(--sheet-radius); border-top-right-radius: var(--sheet-radius);
     }
-    /* Gold accent vertical lines just inside the pop-up, equal to black edge thickness */
-    .stats-sheet::before, .stats-sheet::after{
-      content:""; position:absolute; top:0; bottom:0; width:4px; background:#D4AF37;
+    /* Gold accent: top and sides inside the sheet, following rounded corners */
+    .stats-inner{
+      position:absolute;
+      top: var(--accent-gap); left: var(--accent-gap); right: var(--accent-gap); bottom: 0;
+      border: var(--accent-w) solid #D4AF37;
+      border-bottom: none; /* no bottom horizontal accent */
+      border-top-left-radius: var(--sheet-radius); border-top-right-radius: var(--sheet-radius);
+      padding: 12px 16px; /* inner padding so title doesn't overlap the top accent */
+      display:flex; flex-direction:column; align-items:center; justify-content:flex-start;
     }
-    .stats-sheet::before{ left:8px; }
-    .stats-sheet::after{ right:8px; }
-    
-    /* Smaller, evenly spaced text; title same size as entries */
-    .stats-title{ font-size: clamp(14px, 4vw, 18px); font-weight:800; text-align:center; margin-bottom:12px; }
-    .stats-list{ display:flex; flex-direction:column; gap:10px; }
-    .stat-row{ display:flex; justify-content:space-between; font-size: clamp(14px, 4vw, 18px); }
+
+    /* Typography and spacing: slightly larger than before, uniform rows */
+    .stats-title{ font-size: clamp(16px, 4.5vw, 20px); font-weight:800; text-align:center; }
+    .stats-list{ width:100%; display:flex; flex-direction:column; gap:8px; }
+    .stat-row{ display:flex; justify-content:space-between; font-size: clamp(16px, 4.5vw, 20px); }
+    /* Equal spacing above first stat and below last stat using symmetric spacers */
+    .stats-spacer{ height: 10px; flex: 0 0 auto; }
   </style>
 </head>
 <body>
@@ -209,15 +220,19 @@
   <div id="stats" class="stats" role="dialog" aria-modal="true" aria-labelledby="statsTitle">
     <div id="statsBackdrop" class="stats-backdrop" aria-hidden="true"></div>
     <div id="statsSheet" class="stats-sheet">
-      <div id="statsTitle" class="stats-title">Stats</div>
-      <div class="stats-list">
-        <div class="stat-row"><span>Total games</span><span id="statTotalGames">0</span></div>
-        <div class="stat-row"><span>High score</span><span id="statHigh">0</span></div>
-        <div class="stat-row"><span>Total score</span><span id="statTotalScore">0</span></div>
-        <div class="stat-row"><span>Average score</span><span id="statAvgScore">0</span></div>
-        <div class="stat-row"><span>Most takes</span><span id="statMostTakes">0</span></div>
-        <div class="stat-row"><span>Total takes</span><span id="statTotalTakes">0</span></div>
-        <div class="stat-row"><span>Average takes</span><span id="statAvgTakes">0</span></div>
+      <div class="stats-inner">
+        <div id="statsTitle" class="stats-title">Stats</div>
+        <div class="stats-spacer"></div>
+        <div class="stats-list">
+          <div class="stat-row"><span>Total games</span><span id="statTotalGames">0</span></div>
+          <div class="stat-row"><span>High score</span><span id="statHigh">0</span></div>
+          <div class="stat-row"><span>Total score</span><span id="statTotalScore">0</span></div>
+          <div class="stat-row"><span>Average score</span><span id="statAvgScore">0</span></div>
+          <div class="stat-row"><span>Most takes</span><span id="statMostTakes">0</span></div>
+          <div class="stat-row"><span>Total takes</span><span id="statTotalTakes">0</span></div>
+          <div class="stat-row"><span>Average takes</span><span id="statAvgTakes">0</span></div>
+        </div>
+        <div class="stats-spacer"></div>
       </div>
     </div>
   </div>
