@@ -149,6 +149,15 @@
       font-family: "Boogaloo", system-ui;
       color: #D4AF37;
     }
+    .menu-logo{
+      display:block;
+      width: 70vw;            /* large, but leaves big horizontal gaps */
+      max-height: 45vh;       /* most of the top half of screen */
+      height: auto;
+      object-fit: contain;
+      margin: 3vh auto 2vh;   /* generous vertical spacing, centered */
+      pointer-events: none;   /* decorative */
+    }
     .play-btn{
       position: relative;
       width: min(300px, 60vw);
@@ -223,7 +232,7 @@
   <!-- Menu overlay -->
   <div id="menu" class="menu" role="dialog" aria-modal="true" aria-labelledby="menuTitle">
     <div class="menu-content">
-      <div id="menuTitle" class="menu-title">Chess Run</div>
+      <img id="menuTitle" class="menu-logo" src="data:image/png;base64,PASTE BASE64 STRING HERE" alt="Chess Run logo" />
       <button id="playBtn" class="play-btn" type="button">Start</button>
       <button id="statsBtn" class="play-btn" type="button">Stats</button>
     </div>
