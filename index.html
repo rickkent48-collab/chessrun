@@ -150,33 +150,49 @@
       color: #D4AF37;
     }
     .menu-logo{
-      display:block;
-      width: 70vw;            /* large, but leaves big horizontal gaps */
-      max-height: 45vh;       /* most of the top half of screen */
+      display: block;
+      width: 82vw;          /* larger; still leaves side gaps */
+      max-height: 48vh;     /* occupies most of top half */
       height: auto;
       object-fit: contain;
-      margin: 3vh auto 2vh;   /* generous vertical spacing, centered */
-      pointer-events: none;   /* decorative */
+      margin: 2vh auto 1vh; /* slightly higher (smaller top margin), reduced bottom gap */
+      pointer-events: none;
     }
     .play-btn{
       position: relative;
-      width: min(300px, 60vw);
+      background: #D4AF37;     /* gold outer area */
+      color: #D4AF37;          /* gold text (will sit over inner black fill) */
+      border: none;
+      box-shadow: none;        /* remove any 3D/shadow effects */
+      width: min(240px, 50vw); /* narrower */
       height: 48px;
-      padding: 14px 28px; border-radius:14px; border:none; cursor:pointer;
-      font-size: clamp(18px, 5vw, 22px); font-weight:800;
-      color: #000000; font-family: "Boogaloo", system-ui;
-      background: #D4AF37;
-      box-shadow: 0 6px 0 #b3925e, 0 10px 18px rgba(0,0,0,0.18);
+      font-size: clamp(18px, 5vw, 22px);
+      font-weight: 800;
+      border-radius: 14px;
+      cursor: pointer;
+      font-family: "Boogaloo", system-ui;
+      isolation: isolate;      /* create stacking context for text to appear above pseudo-elements */
+    }
+    .play-btn::before{
+      content: "";
+      position: absolute;
+      /* fill inside the accent line: inset equals accent offset + line width */
+      inset: calc(6px + 2px);
+      background: #000;         /* inner area black */
+      border-radius: 8px;
+      z-index: -2;
     }
     .play-btn::after{
       content: "";
       position: absolute;
-      inset: 6px;
-      border: 2px solid #000000;
+      inset: 6px;               /* accent offset */
+      border: 2px solid #000;   /* black accent line */
       border-radius: 10px;
-      pointer-events: none;
+      z-index: -1;
     }
-    .play-btn:active{ transform: translateY(1px); box-shadow: 0 5px 0 #b3925e, 0 6px 12px rgba(0,0,0,0.18); }
+    /* Ensure text/content render above inner fill */
+    .play-btn > *{ position: relative; z-index: 2; }
+    .play-btn:active{ transform: translateY(1px); }
 
     /* Stats overlay - bottom sheet */
     :root{
