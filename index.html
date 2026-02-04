@@ -130,7 +130,7 @@
 
     /* Menu overlay: big diagonal squares, no inner lines (inherits black/white) */
     .menu{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:70; }
-    .menu.show{ display:flex; }
+    .menu.show{ display:flex; align-items:flex-start; justify-content:center; }
     .menu::before{
       content:"";
       position:absolute; inset:0;
@@ -140,7 +140,7 @@
       position:relative; z-index:1;
       display:flex; flex-direction:column; align-items:center; justify-content:flex-start;
       gap:24px; text-align:center; color:#000000; font-family: "Boogaloo", system-ui;
-      padding-top: 6vh;
+      padding-top: 0;
     }
     .menu-title{
       font-size: clamp(32px, 10vw, 64px);
@@ -156,7 +156,10 @@
       max-height: 45vh;       /* most of the top half of screen */
       height: auto;
       object-fit: contain;
-      margin: 1vh auto 2vh;   /* reduce top margin to move logo higher */
+      margin-top: calc((100vw - 70vw) / 2);  /* top gap equals side gaps */
+      margin-bottom: 2vh;
+      margin-left: auto;
+      margin-right: auto;
       pointer-events: none;   /* decorative */
     }
     .play-btn{
