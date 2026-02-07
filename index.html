@@ -280,7 +280,7 @@
   </div>
 
   <div id="modal" class="modal" role="dialog" aria-modal="true">
-    <div id="goCard" class="go-card" aria-hidden="false"></div>
+    <div id="goCard" class="go-card" aria-hidden="true"></div>
   </div>
 
   <script>
@@ -438,7 +438,6 @@
       resetBoardForNewGame();
       renderBoard();
 
-      // document.getElementById("againBtn").addEventListener("click", restart); // removed; button no longer present
       document.getElementById("restartBtn").addEventListener("click", restart);
       document.getElementById("menuBtn").addEventListener("click", showMenu);
       document.getElementById("playBtn").addEventListener("click", hideMenu);
@@ -1667,6 +1666,7 @@
         `<div class="go-item-value">${mostCaptures}</div>`
       ].join('');
 
+      card.setAttribute('aria-hidden', 'false');
       $modal.classList.add('show');
     }
 
@@ -1676,7 +1676,11 @@
       updateStatsOnGameEnd(score, captures);
       showGameOverCard();
     }
-    function hideModal(){ $modal.classList.remove("show"); }
+    function hideModal(){ 
+      const card = document.getElementById('goCard');
+      if (card) card.setAttribute('aria-hidden', 'true');
+      $modal.classList.remove("show"); 
+    }
 
     function randInt(min, max){ return Math.floor(Math.random() * (max - min + 1)) + min; }
     function shuffle(a){ for (let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } }
