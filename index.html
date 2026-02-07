@@ -302,6 +302,8 @@
     let gameOver = false;
     let inGameOverSequence = false;
     let isAdvancing = false; // lock during scroll
+    let waitingForDeathTap = false;
+    let killerInfo = null; // { row, col, type }
     let captures = 0;
     let boardsInCurrentStage = 0;
 
@@ -446,6 +448,8 @@
       player.type = "P";
       gameOver = false;
       inGameOverSequence = false;
+      waitingForDeathTap = false; // clear waiting state
+      killerInfo = null;
       isAdvancing = false;
       boardsInCurrentStage = 0;
       resetBoardForNewGame();
@@ -1253,7 +1257,16 @@
 
     // Tap-to-move
     function onBoardClick(e){
-      if (gameOver || inGameOverSequence || dragging || isAdvancing) return;
+      if (gameOver || dragging || isAdvancing) return;
+
+      // If we're in the game-over sequence and waiting for tap, any board tap triggers death
+      if (inGameOverSequence && waitingForDeathTap){
+        performDeathCaptureAndScheduleEnd();
+        return;
+      }
+
+      // Normal tap-to-move behavior unchanged
+      if (inGameOverSequence) return;
       const sq = e.target.closest(".sq");
       if (!sq) return;
       const r = parseInt(sq.dataset.row, 10);
@@ -1456,14 +1469,23 @@
       if (kp){ kp.highlight = true; }
       renderBoard();
 
-      setTimeout(() => {
-        const moving = board[killer.row][killer.col] ? { ...board[killer.row][killer.col] } : { color: BLACK, type: killer.type, highlight: true };
-        board[killer.row][killer.col] = null;
-        placePiece(player.row, player.col, moving);
-        renderBoard();
+      // Store killer info and wait for user tap
+      killerInfo = { row: killer.row, col: killer.col, type: killer.type };
+      waitingForDeathTap = true;
+    }
 
-        setTimeout(() => { endGame(); }, 2000);
-      }, 3000);
+    function performDeathCaptureAndScheduleEnd(){
+      if (!waitingForDeathTap || !killerInfo) return;
+      const { row, col, type } = killerInfo;
+      const moving = board[row][col] ? { ...board[row][col] } : { color: BLACK, type, highlight: true };
+      board[row][col] = null;
+      placePiece(player.row, player.col, moving);
+      renderBoard();
+
+      waitingForDeathTap = false;
+      killerInfo = null;
+
+      setTimeout(() => { endGame(); }, 1000); // 1 second after death
     }
 
     function updateScore(){
