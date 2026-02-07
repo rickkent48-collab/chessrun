@@ -313,6 +313,10 @@
     let dragOffsetX = 0, dragOffsetY = 0;
     let legalTargets = new Set();
 
+    // State flags for awaiting user tap to trigger death
+    let awaitDeathTap = false; // true when awaiting user tap to trigger death
+    let lastKiller = null;     // { row, col, type } for the killer piece
+
     const $boardShell = document.querySelector(".board-shell");
     const $board = document.getElementById("board");
     const $score = document.getElementById("score");
@@ -425,8 +429,14 @@
       renderBoard();
 
       document.getElementById("againBtn").addEventListener("click", restart);
-      document.getElementById("restartBtn").addEventListener("click", restart);
-      document.getElementById("menuBtn").addEventListener("click", showMenu);
+      document.getElementById("restartBtn").addEventListener("click", function(e){
+        if (awaitDeathTap){ e.preventDefault(); e.stopPropagation(); triggerDeathThenModal(); return; }
+        restart();
+      });
+      document.getElementById("menuBtn").addEventListener("click", function(e){
+        if (awaitDeathTap){ e.preventDefault(); e.stopPropagation(); triggerDeathThenModal(); return; }
+        showMenu();
+      });
       document.getElementById("playBtn").addEventListener("click", hideMenu);
       document.getElementById("statsBtn").addEventListener("click", showStats);
       document.getElementById("statsBackdrop").addEventListener("click", hideStats);
@@ -1253,6 +1263,8 @@
 
     // Tap-to-move
     function onBoardClick(e){
+      // During awaitDeathTap, allow board tap to trigger death
+      if (awaitDeathTap){ triggerDeathThenModal(); return; }
       if (gameOver || inGameOverSequence || dragging || isAdvancing) return;
       const sq = e.target.closest(".sq");
       if (!sq) return;
@@ -1445,25 +1457,33 @@
       inGameOverSequence = true;
 
       const atks = attackersOfSquare(player.row, player.col);
-      if (!atks.length){
-        endGame();
-        return;
-      }
+      if (!atks.length){ endGame(); return; }
       atks.sort((a,b)=>((a.row-player.row)**2+(a.col-player.col)**2)-((b.row-player.row)**2+(b.col-player.col)**2));
       const killer = atks[0];
 
+      // Highlight the killer and freeze the board
       const kp = board[killer.row][killer.col];
       if (kp){ kp.highlight = true; }
       renderBoard();
 
-      setTimeout(() => {
-        const moving = board[killer.row][killer.col] ? { ...board[killer.row][killer.col] } : { color: BLACK, type: killer.type, highlight: true };
-        board[killer.row][killer.col] = null;
-        placePiece(player.row, player.col, moving);
-        renderBoard();
+      // Await user tap to trigger death
+      awaitDeathTap = true;
+      lastKiller = { row: killer.row, col: killer.col, type: killer.type };
+    }
 
-        setTimeout(() => { endGame(); }, 2000);
-      }, 3000);
+    function triggerDeathThenModal(){
+      if (!awaitDeathTap || !lastKiller) return;
+      awaitDeathTap = false;
+
+      const { row, col, type } = lastKiller;
+      lastKiller = null; // Reset to prevent multiple triggers
+      const moving = board[row][col] ? { ...board[row][col] } : { color: BLACK, type, highlight: true };
+      board[row][col] = null;
+      placePiece(player.row, player.col, moving);
+      renderBoard();
+
+      // Show Game Over pop-up after one second
+      setTimeout(() => { endGame(); }, 1000);
     }
 
     function updateScore(){
