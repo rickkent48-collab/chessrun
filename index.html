@@ -123,10 +123,27 @@
     .controls button:active{ opacity:0.8; }
 
     /* Modal */
-    .modal{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; background: rgba(0,0,0,0.35); z-index:60; }
-    .modal.show{ display:flex; }
-    .card{ background:#fffdf6; color:var(--text); border-radius:14px; padding:18px; width:min(420px, 92vw); box-shadow: 0 8px 20px rgba(0,0,0,0.25); text-align:center; font-family: "Boogaloo", system-ui; }
-    .card h2{ margin:0 0 6px; }
+    /* Modal overlay: keep screen visible; do not darken; allow buttons below to work */
+    .modal{ position:fixed; inset:0; display:none; z-index:60; background: transparent; pointer-events:none; }
+    .modal.show{ display:block; }
+
+    /* Game Over card over the board */
+    .go-card{
+      position: fixed; /* positioned via JS relative to board */
+      background: #000000; /* black */
+      border-radius: 18px;
+      color: #D4AF37; /* gold text */
+      box-sizing: border-box;
+      /* gold accent line all the way around */
+      border: 4px solid #D4AF37;
+      padding: 16px 20px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 10px; /* even spacing between items */
+      pointer-events: none; /* tapping does nothing */
+      font-family: "Boogaloo", system-ui;
+    }
+    .go-item-label{ font-size: clamp(18px, 5vw, 22px); font-weight: 800; }
+    .go-item-value{ font-size: clamp(18px, 5vw, 22px); font-weight: 800; }
 
     /* Menu overlay: big diagonal squares, no inner lines (inherits black/white) */
     .menu{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:70; }
@@ -262,12 +279,8 @@
     </div>
   </div>
 
-  <div id="modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-    <div class="card">
-      <h2 id="modalTitle">Game Over</h2>
-      <p id="modalText">Score: 0</p>
-      <button id="againBtn" type="button">Play Again</button>
-    </div>
+  <div id="modal" class="modal" role="dialog" aria-modal="true">
+    <div id="goCard" class="go-card" aria-hidden="false"></div>
   </div>
 
   <script>
@@ -321,7 +334,6 @@
     const $high  = document.getElementById("high");
     const $cap   = document.getElementById("captures");
     const $modal = document.getElementById("modal");
-    const $modalText = document.getElementById("modalText");
     const $menu  = document.getElementById("menu");
 
     const STAGE_INDEX = { P:0, K:1, N:2, B:3, R:4, Q:5 };
@@ -426,7 +438,7 @@
       resetBoardForNewGame();
       renderBoard();
 
-      document.getElementById("againBtn").addEventListener("click", restart);
+      // document.getElementById("againBtn").addEventListener("click", restart); // removed; button no longer present
       document.getElementById("restartBtn").addEventListener("click", restart);
       document.getElementById("menuBtn").addEventListener("click", showMenu);
       document.getElementById("playBtn").addEventListener("click", hideMenu);
@@ -1623,15 +1635,46 @@
       `;
     }
 
+    // Position and populate the Game Over card over the board
+    function showGameOverCard(){
+      const card = document.getElementById('goCard');
+      const rect = $boardShell.getBoundingClientRect();
+      const squareW = rect.width / BOARD_COLS;
+
+      // Leave half a chess square on left and right
+      const left = rect.left + (squareW / 2);
+      const width = rect.width - squareW;
+      const top  = rect.top;
+      const height = rect.height; // cover most of the chessboard (full height of board)
+
+      card.style.left = `${left}px`;
+      card.style.top  = `${top}px`;
+      card.style.width = `${width}px`;
+      card.style.height = `${height}px`;
+
+      // Populate gold text entries
+      const s = loadStats();
+      const mostCaptures = s.mostTakes ?? 0;
+
+      card.innerHTML = [
+        `<div class="go-item-label">Score</div>`,
+        `<div class="go-item-value">${score}</div>`,
+        `<div class="go-item-label">High Score</div>`,
+        `<div class="go-item-value">${high}</div>`,
+        `<div class="go-item-label">Captures</div>`,
+        `<div class="go-item-value">${captures}</div>`,
+        `<div class="go-item-label">Most Captures</div>`,
+        `<div class="go-item-value">${mostCaptures}</div>`
+      ].join('');
+
+      $modal.classList.add('show');
+    }
+
     function endGame(){
       gameOver = true;
       inGameOverSequence = false;
       updateStatsOnGameEnd(score, captures);
-      showModal("Game Over", "Score: " + String(score));
-    }
-    function showModal(title, text){
-      document.getElementById("modalTitle").textContent = title;
-      $modalText.textContent = text; $modal.classList.add("show");
+      showGameOverCard();
     }
     function hideModal(){ $modal.classList.remove("show"); }
 
