@@ -301,6 +301,7 @@
     let high = 0;
     let gameOver = false;
     let inGameOverSequence = false;
+    let pendingDeath = null; // { killerRow, killerCol, type }
     let isAdvancing = false; // lock during scroll
     let captures = 0;
     let boardsInCurrentStage = 0;
@@ -446,6 +447,7 @@
       player.type = "P";
       gameOver = false;
       inGameOverSequence = false;
+      pendingDeath = null;
       isAdvancing = false;
       boardsInCurrentStage = 0;
       resetBoardForNewGame();
@@ -1253,7 +1255,8 @@
 
     // Tap-to-move
     function onBoardClick(e){
-      if (gameOver || inGameOverSequence || dragging || isAdvancing) return;
+      if (gameOver || dragging || isAdvancing) return;
+      if (inGameOverSequence){ triggerDeath(); return; }
       const sq = e.target.closest(".sq");
       if (!sq) return;
       const r = parseInt(sq.dataset.row, 10);
@@ -1441,6 +1444,19 @@
       return grid;
     }
 
+    function triggerDeath(){
+      if (!pendingDeath) return;
+      const { killerRow, killerCol, type } = pendingDeath;
+      const moving = board[killerRow][killerCol]
+        ? { ...board[killerRow][killerCol], highlight: true }
+        : { color: BLACK, type, highlight: true };
+      board[killerRow][killerCol] = null;
+      placePiece(player.row, player.col, moving);
+      renderBoard();
+      pendingDeath = null;
+      setTimeout(() => { endGame(); }, 1000); // show modal after 1s
+    }
+
     function revealKillerThenCaptureAndEnd(){
       inGameOverSequence = true;
 
@@ -1456,14 +1472,7 @@
       if (kp){ kp.highlight = true; }
       renderBoard();
 
-      setTimeout(() => {
-        const moving = board[killer.row][killer.col] ? { ...board[killer.row][killer.col] } : { color: BLACK, type: killer.type, highlight: true };
-        board[killer.row][killer.col] = null;
-        placePiece(player.row, player.col, moving);
-        renderBoard();
-
-        setTimeout(() => { endGame(); }, 2000);
-      }, 3000);
+      pendingDeath = { killerRow: killer.row, killerCol: killer.col, type: killer.type };
     }
 
     function updateScore(){
