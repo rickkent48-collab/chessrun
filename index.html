@@ -1265,7 +1265,7 @@
         return;
       }
 
-      // Normal tap-to-move behavior unchanged
+      // Block input during game-over sequence (after death tap, before game over modal)
       if (inGameOverSequence) return;
       const sq = e.target.closest(".sq");
       if (!sq) return;
@@ -1475,6 +1475,7 @@
     }
 
     function performDeathCaptureAndScheduleEnd(){
+      // Guard: only proceed if we're actually waiting for death tap and have killer info
       if (!waitingForDeathTap || !killerInfo) return;
       const { row, col, type } = killerInfo;
       const moving = board[row][col] ? { ...board[row][col] } : { color: BLACK, type, highlight: true };
