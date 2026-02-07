@@ -1476,6 +1476,7 @@
       awaitDeathTap = false;
 
       const { row, col, type } = lastKiller;
+      lastKiller = null; // Reset to prevent multiple triggers
       const moving = board[row][col] ? { ...board[row][col] } : { color: BLACK, type, highlight: true };
       board[row][col] = null;
       placePiece(player.row, player.col, moving);
