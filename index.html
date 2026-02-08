@@ -1670,10 +1670,10 @@
       card.innerHTML = [
         `<div class="go-item-label">Score</div>`,
         `<div class="go-item-value">${score}</div>`,
-        '<div class="go-high">\n  <div class="go-item-label">High Score</div>\n  <div class="go-item-value">'+high+'</div>\n</div>',
+        `<div class="go-high"><div class="go-item-label">High Score</div><div class="go-item-value">${high}</div></div>`,
         `<div class="go-item-label">Captures</div>`,
         `<div class="go-item-value">${captures}</div>`,
-        '<div class="go-most">\n  <div class="go-item-label">Most Captures</div>\n  <div class="go-item-value">'+mostCaptures+'</div>\n</div>'
+        `<div class="go-most"><div class="go-item-label">Most Captures</div><div class="go-item-value">${mostCaptures}</div></div>`
       ].join('');
 
       card.setAttribute('aria-hidden', 'false');
