@@ -214,7 +214,7 @@
     .stats.show{ display:block; }
     .stats-backdrop{ position:fixed; top:0; left:0; right:0; height:50vh; background: transparent; }
     .stats-sheet{
-      position:fixed; left:0; right:0; bottom:0; height:50vh; background:#000; color: var(--text);
+      position:fixed; left:0; right:0; bottom:0; height:65vh; background:#000; color: var(--text);
       border-top-left-radius: var(--sheet-radius); border-top-right-radius: var(--sheet-radius);
       border: var(--accent-w) solid #D4AF37; /* move gold accent to outer edge */
       border-bottom: none; /* keep bottom edge without gold line */
@@ -234,7 +234,14 @@
     .stats-list{ width:100%; display:flex; flex-direction:column; gap:8px; }
     .stat-row{ display:flex; justify-content:space-between; font-size: clamp(16px, 4.5vw, 20px); line-height: 1; }
     /* Equal spacing above first stat and below last stat using symmetric spacers */
-    .stats-spacer{ height: 3em; flex: 0 0 auto; }
+    .stats-spacer{ height: 2em; flex: 0 0 auto; }
+    
+    /* Blank line entries */
+    .stat-blank{ height: 1em; font-size: clamp(16px, 4.5vw, 20px); line-height: 1; }
+    
+    /* Row color utilities */
+    .stat-white{ color: #FFFFFF; }
+    .stat-gold{  color: #D4AF37; }
   </style>
 </head>
 <body>
@@ -271,13 +278,25 @@
         <div id="statsTitle" class="stats-title">Stats</div>
         <div class="stats-spacer"></div>
         <div class="stats-list">
-          <div class="stat-row"><span>Total games</span><span id="statTotalGames">0</span></div>
-          <div class="stat-row"><span>High score</span><span id="statHigh">0</span></div>
-          <div class="stat-row"><span>Total score</span><span id="statTotalScore">0</span></div>
-          <div class="stat-row"><span>Average score</span><span id="statAvgScore">0</span></div>
-          <div class="stat-row"><span>Most takes</span><span id="statMostTakes">0</span></div>
-          <div class="stat-row"><span>Total takes</span><span id="statTotalTakes">0</span></div>
-          <div class="stat-row"><span>Average takes</span><span id="statAvgTakes">0</span></div>
+          <div class="stat-row stat-white"><span>Total Games</span><span id="statTotalGames">0</span></div>
+          <div class="stat-blank">&nbsp;</div>
+
+          <div class="stat-row stat-gold"><span>High Score</span><span id="statHigh">0</span></div>
+          <div class="stat-blank">&nbsp;</div>
+
+          <div class="stat-row stat-white"><span>Total Score</span><span id="statTotalScore">0</span></div>
+          <div class="stat-blank">&nbsp;</div>
+
+          <div class="stat-row stat-gold"><span>Average Score</span><span id="statAvgScore">0</span></div>
+          <div class="stat-blank">&nbsp;</div>
+
+          <div class="stat-row stat-white"><span>Most Captures</span><span id="statMostTakes">0</span></div>
+          <div class="stat-blank">&nbsp;</div>
+
+          <div class="stat-row stat-gold"><span>Total Captures</span><span id="statTotalTakes">0</span></div>
+          <div class="stat-blank">&nbsp;</div>
+
+          <div class="stat-row stat-white"><span>Average Captures</span><span id="statAvgTakes">0</span></div>
         </div>
         <div class="stats-spacer"></div>
       </div>
