@@ -276,7 +276,7 @@
     <div id="statsSheet" class="stats-sheet">
       <div class="stats-inner">
         <div id="statsTitle" class="stats-title">Stats</div>
-        <div class="stats-spacer"></div>
+        <div class="stat-blank">&nbsp;</div>
         <div class="stats-list">
           <div class="stat-row stat-white"><span>Total Games</span><span id="statTotalGames">0</span></div>
           <div class="stat-blank">&nbsp;</div>
@@ -298,7 +298,6 @@
 
           <div class="stat-row stat-white"><span>Average Captures</span><span id="statAvgTakes">0</span></div>
         </div>
-        <div class="stats-spacer"></div>
       </div>
     </div>
   </div>
@@ -466,8 +465,7 @@
       document.getElementById("menuBtn").addEventListener("click", showMenu);
       document.getElementById("playBtn").addEventListener("click", hideMenu);
       document.getElementById("statsBtn").addEventListener("click", showStats);
-      document.getElementById("statsBackdrop").addEventListener("click", hideStats);
-      document.getElementById("statsSheet").addEventListener("click", function(e){ e.stopPropagation(); });
+      document.getElementById("stats").addEventListener("click", hideStats);
 
       // Tap-to-move
       $board.addEventListener("click", onBoardClick);
