@@ -234,7 +234,14 @@
     .stats-list{ width:100%; display:flex; flex-direction:column; gap:8px; }
     .stat-row{ display:flex; justify-content:space-between; font-size: clamp(16px, 4.5vw, 20px); line-height: 1; }
     /* Equal spacing above first stat and below last stat using symmetric spacers */
-    .stats-spacer{ height: 3em; flex: 0 0 auto; }
+    .stats-spacer{ height: 2em; flex: 0 0 auto; }
+    
+    /* Alternating colors for stat rows */
+    .stat-row.white{ color:#FFFFFF; }
+    .stat-row.gold{  color:#D4AF37; }
+    
+    /* Empty line between stat rows */
+    .stat-empty{ height: 1em; line-height:1; }
   </style>
 </head>
 <body>
@@ -271,13 +278,19 @@
         <div id="statsTitle" class="stats-title">Stats</div>
         <div class="stats-spacer"></div>
         <div class="stats-list">
-          <div class="stat-row"><span>Total games</span><span id="statTotalGames">0</span></div>
-          <div class="stat-row"><span>High score</span><span id="statHigh">0</span></div>
-          <div class="stat-row"><span>Total score</span><span id="statTotalScore">0</span></div>
-          <div class="stat-row"><span>Average score</span><span id="statAvgScore">0</span></div>
-          <div class="stat-row"><span>Most takes</span><span id="statMostTakes">0</span></div>
-          <div class="stat-row"><span>Total takes</span><span id="statTotalTakes">0</span></div>
-          <div class="stat-row"><span>Average takes</span><span id="statAvgTakes">0</span></div>
+          <div class="stat-row white"><span>Total Games</span><span id="statTotalGames">0</span></div>
+          <div class="stat-empty"></div>
+          <div class="stat-row gold"><span>High Score</span><span id="statHigh">0</span></div>
+          <div class="stat-empty"></div>
+          <div class="stat-row white"><span>Total Score</span><span id="statTotalScore">0</span></div>
+          <div class="stat-empty"></div>
+          <div class="stat-row gold"><span>Average Score</span><span id="statAvgScore">0</span></div>
+          <div class="stat-empty"></div>
+          <div class="stat-row white"><span>Most Captures</span><span id="statMostTakes">0</span></div>
+          <div class="stat-empty"></div>
+          <div class="stat-row gold"><span>Total Captures</span><span id="statTotalTakes">0</span></div>
+          <div class="stat-empty"></div>
+          <div class="stat-row white"><span>Average Captures</span><span id="statAvgTakes">0</span></div>
         </div>
         <div class="stats-spacer"></div>
       </div>
