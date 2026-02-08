@@ -214,7 +214,7 @@
     .stats.show{ display:block; }
     .stats-backdrop{ position:fixed; top:0; left:0; right:0; height:50vh; background: transparent; }
     .stats-sheet{
-      position:fixed; left:0; right:0; bottom:0; height:65vh; background:#000; color: var(--text);
+      position:fixed; left:0; right:0; bottom:0; height:58vh; background:#000; color: var(--text);
       border-top-left-radius: var(--sheet-radius); border-top-right-radius: var(--sheet-radius);
       border: var(--accent-w) solid #D4AF37; /* move gold accent to outer edge */
       border-bottom: none; /* keep bottom edge without gold line */
@@ -235,6 +235,7 @@
     .stat-row{ display:flex; justify-content:space-between; font-size: clamp(16px, 4.5vw, 20px); line-height: 1; }
     /* Equal spacing above first stat and below last stat using symmetric spacers */
     .stats-spacer{ height: 2em; flex: 0 0 auto; }
+    .stats-inner .stats-spacer:last-child{ display: none; }
     
     /* Blank line entries */
     .stat-blank{ height: 1em; font-size: clamp(16px, 4.5vw, 20px); line-height: 1; }
@@ -297,6 +298,7 @@
           <div class="stat-blank">&nbsp;</div>
 
           <div class="stat-row stat-white"><span>Average Captures</span><span id="statAvgTakes">0</span></div>
+          <div class="stat-blank">&nbsp;</div>
         </div>
         <div class="stats-spacer"></div>
       </div>
@@ -467,7 +469,7 @@
       document.getElementById("playBtn").addEventListener("click", hideMenu);
       document.getElementById("statsBtn").addEventListener("click", showStats);
       document.getElementById("statsBackdrop").addEventListener("click", hideStats);
-      document.getElementById("statsSheet").addEventListener("click", function(e){ e.stopPropagation(); });
+      document.getElementById("statsSheet").addEventListener("click", hideStats);
 
       // Tap-to-move
       $board.addEventListener("click", onBoardClick);
