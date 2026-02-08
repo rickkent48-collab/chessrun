@@ -142,8 +142,13 @@
       pointer-events: none; /* tapping does nothing */
       font-family: "Boogaloo", system-ui;
     }
-    .go-item-label{ font-size: clamp(18px, 5vw, 22px); font-weight: 800; }
-    .go-item-value{ font-size: clamp(18px, 5vw, 22px); font-weight: 800; }
+    /* Game Over card text sizes doubled */
+    .go-item-label{ font-size: clamp(36px, 10vw, 44px); font-weight: 800; }
+    .go-item-value{ font-size: clamp(36px, 10vw, 44px); font-weight: 800; }
+
+    /* High Score and Most Captures entries white */
+    .go-high .go-item-label, .go-high .go-item-value,
+    .go-most .go-item-label, .go-most .go-item-value{ color: #FFFFFF; }
 
     /* Menu overlay: big diagonal squares, no inner lines (inherits black/white) */
     .menu{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:70; }
@@ -209,17 +214,24 @@
     .stats{ position:fixed; inset:0; display:none; z-index:75; }
     .stats.show{ display:block; }
     .stats-backdrop{ position:fixed; top:0; left:0; right:0; height:50vh; background: transparent; }
+    /* Stats sheet: outer-edge gold accent outline (top and sides only) */
     .stats-sheet{
       position:fixed; left:0; right:0; bottom:0; height:50vh; background:#000; color: var(--text);
       border-top-left-radius: var(--sheet-radius); border-top-right-radius: var(--sheet-radius);
     }
-    /* Gold accent: top and sides inside the sheet, following rounded corners */
+    .stats-sheet::before{
+      content: "";
+      position: absolute; inset: 0;
+      border: var(--accent-w) solid #D4AF37; /* same thickness */
+      border-bottom: none; /* keep no bottom horizontal accent */
+      border-top-left-radius: var(--sheet-radius); border-top-right-radius: var(--sheet-radius);
+      pointer-events: none;
+    }
+    /* Remove inner border so content spacing stays unchanged */
     .stats-inner{
       position:absolute;
       top: var(--accent-gap); left: var(--accent-gap); right: var(--accent-gap); bottom: 0;
-      border: var(--accent-w) solid #D4AF37;
-      border-bottom: none; /* no bottom horizontal accent */
-      border-top-left-radius: var(--sheet-radius); border-top-right-radius: var(--sheet-radius);
+      border: none;
       padding: 12px 16px; /* inner padding so title doesn't overlap the top accent */
       display:flex; flex-direction:column; align-items:center; justify-content:flex-start;
     }
@@ -1658,12 +1670,10 @@
       card.innerHTML = [
         `<div class="go-item-label">Score</div>`,
         `<div class="go-item-value">${score}</div>`,
-        `<div class="go-item-label">High Score</div>`,
-        `<div class="go-item-value">${high}</div>`,
+        `<div class="go-high"><div class="go-item-label">High Score</div><div class="go-item-value">${high}</div></div>`,
         `<div class="go-item-label">Captures</div>`,
         `<div class="go-item-value">${captures}</div>`,
-        `<div class="go-item-label">Most Captures</div>`,
-        `<div class="go-item-value">${mostCaptures}</div>`
+        `<div class="go-most"><div class="go-item-label">Most Captures</div><div class="go-item-value">${mostCaptures}</div></div>`
       ].join('');
 
       card.setAttribute('aria-hidden', 'false');
