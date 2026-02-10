@@ -594,9 +594,11 @@
           if (!successTwo){ attempts++; continue; }
         }
 
-        // Place opposition as before, then free lines and saturate forward attack coverage
+        // Place opposition as before
         const targetOpp = randInt(minOpp, maxOpp);
         placeOppositionWithConstraints(targetOpp, protectedSquares);
+        
+        // Free line pieces to make rooks/bishops more dangerous, then add more coverage
         freeLinePieces();
         saturateForwardAttackCoverage(protectedSquares);
 
@@ -1768,12 +1770,12 @@
     // Ensure pawns have more decision points (captures / lateral) and occasional backtrack moments
     function ensurePawnComplexity(protectedSquares){
       // Build extra decision/capture points by attacking forward squares while keeping alternates safe
-      // Target at least 3 decision events for pawns
+      // Target at least 3 potential decision events for pawns
       const minDecisions = 3;
-      let decisions = 0;
+      let placedPieces = 0;
       // Bias attacks into the player's column and adjacent columns ahead
       const c = player.col;
-      for (let r = 1; r < TOP_ROW && decisions < minDecisions; r++){
+      for (let r = 1; r < TOP_ROW && placedPieces < minDecisions; r++){
         for (const cc of [c, c-1, c+1]){
           if (!inBounds(r, cc)) continue;
           const k = keyOf(r, cc);
@@ -1783,7 +1785,7 @@
             // Place a strategically dangerous piece
             const type = (Math.random() < 0.5) ? 'r' : 'b';
             placePiece(r, cc, { color: BLACK, type: type, highlight: false });
-            decisions++;
+            placedPieces++;
           }
         }
       }
@@ -1834,12 +1836,17 @@
 
     // Add more forced switches/backtracks to make the path zig-zag and less obvious
     function enforceMultipleSwitches(protectedSquares){
-      // Introduce 2–3 switch points at random rows
-      const switchCount = 2 + randInt(0, 1);
+      // Introduce 2–3 switch points at random rows (randInt(0,1) returns 0 or 1)
+      const maxRow = Math.min(TOP_ROW-2, 8);
+      if (maxRow < 2) return; // Not enough rows for switches
+      
+      const switchCount = Math.min(2 + randInt(0, 1), maxRow - 1);
       const chosen = new Set();
-      while (chosen.size < switchCount){
-        const sr = randInt(2, Math.min(TOP_ROW-2, 8));
+      let attempts = 0;
+      while (chosen.size < switchCount && attempts < 50){
+        const sr = randInt(2, maxRow);
         chosen.add(sr);
+        attempts++;
       }
       for (const sr of chosen){
         // Attack squares directly ahead at the switch row so the player must go sideways/back first
