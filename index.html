@@ -9,13 +9,18 @@
   <style>
     :root{
       --gold: #FFD700; /* bolder, unified gold used everywhere */
+      --gold-dark: #A67C00; /* dark gold for outlines */
+      --blue: #1976D2; /* blue for opponent pieces */
+      --blue-dark: #0D47A1; /* dark blue for outlines */
+      --red: #D32F2F; /* red for danger/killer */
+      --red-dark: #8B0000; /* dark red for outlines */
       --board-cols: 8;
       --board-rows: 11;
       --square-size: calc(100vw / var(--board-cols));
       --light: #ffffff;  /* board light squares: white */
       --dark:  #000000;  /* board dark squares: black */
       --text:  var(--gold);
-      --danger: #D32F2F; /* killer highlight is RED now */
+      --danger: var(--red); /* killer highlight is RED now */
 
       --above-gap: 10px;
       --below-gap: calc(var(--above-gap) * 2);
@@ -103,10 +108,14 @@
 
     /* Piece visuals: user (white) rich royal gold, opponent (black) rich bold blue */
     .piece{ position:relative; z-index:2; font-family: "Boogaloo", system-ui; }
-    .white{ color: var(--gold); text-shadow:none; }  /* royal gold (slightly darker, still bright) */
-    .black{ color:#1976D2; text-shadow:none; }  /* rich bold blue (slightly darker, still bright) */
-    .danger{ color: var(--danger) !important; } /* killer highlight is RED now */
-    .piece svg{ width:calc(var(--square-size) * 0.7); height:calc(var(--square-size) * 0.7); }
+    .white{ color: var(--gold); text-shadow:none; -webkit-text-stroke: 3px var(--gold-dark); }  /* royal gold with dark gold outline */
+    .black{ color: var(--blue); text-shadow:none; -webkit-text-stroke: 3px var(--blue-dark); }  /* rich bold blue with dark blue outline */
+    .danger{ color: var(--red) !important; -webkit-text-stroke: 3px var(--red-dark); } /* killer highlight is RED with dark red outline */
+    .piece svg{ 
+      width:calc(var(--square-size) * 0.62); 
+      height:calc(var(--square-size) * 0.62); 
+      display: block; /* avoid inline baseline offset for exact centering */
+    }
 
     /* Under-board controls */
     .controls{
@@ -1644,11 +1653,12 @@
     function pawnSVG(color, highlight=false){
       const isWhite = (color === WHITE);
       // For white, use currentColor so it inherits from .white (var(--gold))
-      const fill = isWhite ? "currentColor" : (highlight ? "#D32F2F" : "#1976D2");
-      const stroke = isWhite ? "currentColor" : (highlight ? "#8B0000" : "#0D47A1");
+      const fill = isWhite ? "currentColor" : (highlight ? varDangerFill() : varBlueFill());
+      const stroke = isWhite ? getGoldDark() : (highlight ? getRedDark() : getBlueDark());
+      const sw = 3; // consistent stroke width for matching style
       return `
         <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <circle cx="50" cy="24" r="14" fill="${fill}" stroke="${stroke}" stroke-width="2"/>
+          <circle cx="50" cy="24" r="14" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>
           <path d="M35 40
                    C35 36, 65 36, 65 40
                    C65 46, 60 52, 54 56
@@ -1656,12 +1666,18 @@
                    L38 72
                    C38 66, 40 60, 46 56
                    C40 52, 35 46, 35 40Z"
-                fill="${fill}" stroke="${stroke}" stroke-width="2"/>
-          <rect x="28" y="72" width="44" height="8" rx="2" ry="2" fill="${fill}" stroke="${stroke}" stroke-width="2"/>
-          <rect x="22" y="80" width="56" height="8" rx="2" ry="2" fill="${fill}" stroke="${stroke}" stroke-width="2"/>
+                fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>
+          <rect x="28" y="72" width="44" height="8" rx="2" ry="2" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>
+          <rect x="22" y="80" width="56" height="8" rx="2" ry="2" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>
         </svg>
       `;
     }
+
+    function getGoldDark(){ return '#A67C00'; }
+    function getBlueDark(){ return '#0D47A1'; }
+    function getRedDark(){ return '#8B0000'; }
+    function varBlueFill(){ return '#1976D2'; }
+    function varDangerFill(){ return '#D32F2F'; }
 
     // Position and populate the Game Over card over the board
     function showGameOverCard(){
