@@ -386,15 +386,19 @@
     };
 
     const OPP_COUNTS = [
-      [10, 16],   // Pawn
-      [12, 18],   // King
-      [14, 20],   // Knight
-      [15, 22],   // Bishop
-      [16, 24],   // Rook
-      [18, 26],   // Queen
+      [18, 24],   // Pawn
+      [22, 28],   // King
+      [26, 32],   // Knight
+      [28, 34],   // Bishop
+      [30, 36],   // Rook
+      [32, 38],   // Queen
     ];
 
-    const CONSTRICTION = [0.35, 0.5, 0.6, 0.7, 0.8, 0.85];
+    const CONSTRICTION = [0.85, 0.88, 0.9, 0.92, 0.94, 0.95];
+
+    const FORWARD_CORRIDOR_BLOCKAGE_INTENSITY = [0.8, 0.84, 0.88, 0.9, 0.92, 0.94];
+
+    const SWITCH_PROB = [0.6, 0.7, 0.75, 0.8, 0.85, 0.88];
 
     function currentStage(){ return STAGE_INDEX[player.type] ?? 0; }
 
@@ -554,8 +558,19 @@
 
       if (!constrictAlternatesUsingPath()) return false;
 
+      // Compute current truth path
       const res = bfsSafePath(board, player.type);
-      return !!(res && res.path && res.path.length);
+      if (!res || !res.path || !res.path.length) return false;
+      const pathSet = new Set(res.path.map(p => keyOf(p.r, p.c)));
+
+      // Add corridor blockers and re-validate
+      addForwardCorridorBlockers(pathSet);
+      const stage = currentStage();
+      const [minOpp, maxOpp] = OPP_COUNTS[stage];
+      enforceOppositionCountRange(minOpp, maxOpp, pathSet);
+
+      const res2 = bfsSafePath(board, player.type);
+      return !!(res2 && res2.path && res2.path.length);
     }
 
     function hasSafeFirstMoveFromStart(){
@@ -573,7 +588,7 @@
       const stage = currentStage();
       const [minOpp, maxOpp] = OPP_COUNTS[stage];
 
-      while (attempts < 30){
+      while (attempts < 60){
         const savedCol = player.col;
         board = createEmptyBoard();
         player.row = 0; player.col = savedCol;
@@ -667,7 +682,33 @@
         }
 
         let moved = false;
-        if (isEmpty(nextR, c) && landingSafeAfterSimulatedMove(r, c, nextR, c)){
+        
+        // Try lateral switching first based on SWITCH_PROB
+        const stage = currentStage();
+        const switchProb = SWITCH_PROB[stage];
+        if (Math.random() < switchProb){
+          const preferred = (Math.random() < 0.5 ? -1 : +1);
+          const ordered = [preferred, preferred === -1 ? +1 : -1];
+          for (const dc of ordered){
+            const targetC = c + dc;
+            if (!inBounds(nextR, targetC)) continue;
+            if (!board[nextR][targetC]){
+              const nearWeights = OPP_WEIGHTS.near[stage];
+              const tType = pickFromSubset(nearWeights, ["n","r","b"]);
+              board[nextR][targetC] = { color: BLACK, type: tType };
+            }
+            pruneAttackersForCaptureLanding(r, c, nextR, targetC);
+            if (landingSafeAfterSimulatedCapture(r, c, nextR, targetC)){
+              protectedSquares.add(keyOf(nextR, targetC));
+              r = nextR; c = targetC; moved = true; break;
+            } else {
+              board[nextR][targetC] = null;
+            }
+          }
+        }
+        
+        // If no lateral switch, try straight forward
+        if (!moved && isEmpty(nextR, c) && landingSafeAfterSimulatedMove(r, c, nextR, c)){
           board[nextR][c] = null;
           protectedSquares.add(keyOf(nextR, c));
           guardSquareFromAttackWithImmutables(nextR, c, mandatoryRookKeys);
@@ -680,7 +721,6 @@
             const targetC = c + dc;
             if (!inBounds(nextR, targetC)) continue;
             if (!board[nextR][targetC]){
-              const stage = currentStage();
               const nearWeights = OPP_WEIGHTS.near[stage];
               const tType = pickFromSubset(nearWeights, ["n","r","b"]);
               board[nextR][targetC] = { color: BLACK, type: tType };
@@ -989,6 +1029,37 @@
         }
       }
       return false;
+    }
+
+    function addForwardCorridorBlockers(pathSet){
+      const stage = currentStage();
+      const intensity = FORWARD_CORRIDOR_BLOCKAGE_INTENSITY[stage];
+      const cols = [player.col - 1, player.col, player.col + 1].filter(c => inBounds(0, c));
+
+      for (let r = 1; r <= TOP_ROW - 1; r++){
+        for (const c of cols){
+          const k = keyOf(r, c);
+          if (pathSet.has(k)) continue;     // do not touch truth path
+          if (board[r][c]) continue;        // skip filled
+          if (Math.random() > intensity) continue;
+
+          // Prefer attackers that make straight lifting dangerous but avoid attacking the truth path
+          const candidates = shuffleCopy(["r","b","n","q"]);
+          let placed = false;
+          const original = board[r][c];
+          for (const t of candidates){
+            board[r][c] = { color: BLACK, type: t };
+            // If this attacker touches any truth path square, reject
+            let attacksPath = false;
+            for (const pk of pathSet){
+              const [pr, pc] = pk.split(",").map(Number);
+              if (blackAttacksSquare(t, r, c, pr, pc)){ attacksPath = true; break; }
+            }
+            if (!attacksPath){ placed = true; break; }
+          }
+          if (!placed){ board[r][c] = original; }
+        }
+      }
     }
 
     function guardStartSquare(){
