@@ -458,6 +458,101 @@
     function showStats(){ renderStats(); document.getElementById("stats").classList.add("show"); }
     function hideStats(){ document.getElementById("stats").classList.remove("show"); }
 
+    // Difficulty tuning knobs
+    const HARDNESS = {
+      forwardBlockDepth: 3,   // rows ahead to try blocking straight path
+      minForcedPawnCaptures: 1,
+      maxForcedPawnCaptures: 2,
+      addKnights: 2,          // knights threatening forward-accessible squares
+      addRooks: 1,            // rooks with freed rays
+      addBishops: 1           // bishops with freed diagonals
+    };
+
+    // Place a blocking opponent directly ahead to discourage trivial forward moves
+    function blockStraightAhead(){
+      const c = player.col;
+      for (let d = 1; d <= HARDNESS.forwardBlockDepth; d++){
+        const r = player.row + d;
+        if (!inBounds(r, c)) break;
+        if (!board[r][c]){ board[r][c] = { color: BLACK, type: "P" }; break; }
+      }
+    }
+
+    // Force pawn decisions early by placing diagonal opponents that require captures
+    function enforceForcedPawnCaptures(){
+      if (player.type !== "P") return;
+      let placed = 0;
+      const candidates = [
+        { r: player.row + 1, c: player.col + 1 },
+        { r: player.row + 1, c: player.col - 1 },
+        { r: player.row + 2, c: player.col + 1 },
+        { r: player.row + 2, c: player.col - 1 }
+      ];
+      shuffle(candidates);
+      for (const { r, c } of candidates){
+        if (!inBounds(r, c)) continue;
+        if (!board[r][c]){ board[r][c] = { color: BLACK, type: "P" }; placed++; }
+        if (placed >= randInt(HARDNESS.minForcedPawnCaptures, HARDNESS.maxForcedPawnCaptures)) break;
+      }
+    }
+
+    // Clear ray in given direction from (br, bc) so rooks/bishops threaten more squares
+    function clearRay(br, bc, dr, dc){
+      let rr = br + dr, cc = bc + dc;
+      while (inBounds(rr, cc)){
+        // Remove only black pieces blocking the ray; keep white player intact
+        const p = board[rr][cc];
+        if (p && p.color === BLACK) board[rr][cc] = null;
+        rr += dr; cc += dc;
+      }
+    }
+
+    // Place a rook with free horizontal or vertical ray aimed near player lane
+    function placeStrategicRook(){
+      const row = randInt(1, BOARD_ROWS - 2);
+      const col = randInt(0, BOARD_COLS - 1);
+      if (!board[row][col]){
+        board[row][col] = { color: BLACK, type: "R" };
+        if (Math.random() < 0.5){ clearRay(row, col, 0, Math.sign(player.col - col) || 1); }
+        else { clearRay(row, col, Math.sign(player.row - row) || 1, 0); }
+      }
+    }
+
+    // Place a bishop with freed diagonal ray crossing the player's column
+    function placeStrategicBishop(){
+      const row = randInt(1, BOARD_ROWS - 2);
+      const col = randInt(0, BOARD_COLS - 1);
+      if (!board[row][col]){
+        board[row][col] = { color: BLACK, type: "B" };
+        const dc = player.col > col ? 1 : -1;
+        const dr = Math.random() < 0.5 ? 1 : -1;
+        clearRay(row, col, dr, dc);
+      }
+    }
+
+    // Add knights that attack squares in front of the player's progress lane
+    function placeThreatKnights(){
+      const tries = HARDNESS.addKnights * 2;
+      let placed = 0;
+      for (let t = 0; t < tries && placed < HARDNESS.addKnights; t++){
+        const row = randInt(1, BOARD_ROWS - 2);
+        const col = randInt(0, BOARD_COLS - 1);
+        if (!board[row][col]){
+          board[row][col] = { color: BLACK, type: "N" };
+          placed++;
+        }
+      }
+    }
+
+    // Aggregate difficulty placements; keep solvability checked afterward
+    function amplifyThreatCoverage(){
+      blockStraightAhead();
+      enforceForcedPawnCaptures();
+      for (let i = 0; i < HARDNESS.addRooks; i++) placeStrategicRook();
+      for (let i = 0; i < HARDNESS.addBishops; i++) placeStrategicBishop();
+      placeThreatKnights();
+    }
+
     // Init
     init();
     function init(){
@@ -1720,101 +1815,6 @@
     function randInt(min, max){ return Math.floor(Math.random() * (max - min + 1)) + min; }
     function shuffle(a){ for (let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } }
     function shuffleCopy(a){ const b = a.slice(); shuffle(b); return b; }
-
-    // Difficulty tuning knobs
-    const HARDNESS = {
-      forwardBlockDepth: 3,   // rows ahead to try blocking straight path
-      minForcedPawnCaptures: 1,
-      maxForcedPawnCaptures: 2,
-      addKnights: 2,          // knights threatening forward-accessible squares
-      addRooks: 1,            // rooks with freed rays
-      addBishops: 1           // bishops with freed diagonals
-    };
-
-    // Place a blocking opponent directly ahead to discourage trivial forward moves
-    function blockStraightAhead(){
-      const c = player.col;
-      for (let d = 1; d <= HARDNESS.forwardBlockDepth; d++){
-        const r = player.row + d;
-        if (!inBounds(r, c)) break;
-        if (!board[r][c]){ board[r][c] = { color: BLACK, type: "P" }; break; }
-      }
-    }
-
-    // Force pawn decisions early by placing diagonal opponents that require captures
-    function enforceForcedPawnCaptures(){
-      if (player.type !== "P") return;
-      let placed = 0;
-      const candidates = [
-        { r: player.row + 1, c: player.col + 1 },
-        { r: player.row + 1, c: player.col - 1 },
-        { r: player.row + 2, c: player.col + 1 },
-        { r: player.row + 2, c: player.col - 1 }
-      ];
-      shuffle(candidates);
-      for (const { r, c } of candidates){
-        if (!inBounds(r, c)) continue;
-        if (!board[r][c]){ board[r][c] = { color: BLACK, type: "P" }; placed++; }
-        if (placed >= randInt(HARDNESS.minForcedPawnCaptures, HARDNESS.maxForcedPawnCaptures)) break;
-      }
-    }
-
-    // Clear ray in given direction from (br, bc) so rooks/bishops threaten more squares
-    function clearRay(br, bc, dr, dc){
-      let rr = br + dr, cc = bc + dc;
-      while (inBounds(rr, cc)){
-        // Remove only black pieces blocking the ray; keep white player intact
-        const p = board[rr][cc];
-        if (p && p.color === BLACK) board[rr][cc] = null;
-        rr += dr; cc += dc;
-      }
-    }
-
-    // Place a rook with free horizontal or vertical ray aimed near player lane
-    function placeStrategicRook(){
-      const row = randInt(1, BOARD_ROWS - 2);
-      const col = randInt(0, BOARD_COLS - 1);
-      if (!board[row][col]){
-        board[row][col] = { color: BLACK, type: "R" };
-        if (Math.random() < 0.5){ clearRay(row, col, 0, Math.sign(player.col - col) || 1); }
-        else { clearRay(row, col, Math.sign(player.row - row) || 1, 0); }
-      }
-    }
-
-    // Place a bishop with freed diagonal ray crossing the player's column
-    function placeStrategicBishop(){
-      const row = randInt(1, BOARD_ROWS - 2);
-      const col = randInt(0, BOARD_COLS - 1);
-      if (!board[row][col]){
-        board[row][col] = { color: BLACK, type: "B" };
-        const dc = player.col > col ? 1 : -1;
-        const dr = Math.random() < 0.5 ? 1 : -1;
-        clearRay(row, col, dr, dc);
-      }
-    }
-
-    // Add knights that attack squares in front of the player's progress lane
-    function placeThreatKnights(){
-      const tries = HARDNESS.addKnights * 2;
-      let placed = 0;
-      for (let t = 0; t < tries && placed < HARDNESS.addKnights; t++){
-        const row = randInt(1, BOARD_ROWS - 2);
-        const col = randInt(0, BOARD_COLS - 1);
-        if (!board[row][col]){
-          board[row][col] = { color: BLACK, type: "N" };
-          placed++;
-        }
-      }
-    }
-
-    // Aggregate difficulty placements; keep solvability checked afterward
-    function amplifyThreatCoverage(){
-      blockStraightAhead();
-      enforceForcedPawnCaptures();
-      for (let i = 0; i < HARDNESS.addRooks; i++) placeStrategicRook();
-      for (let i = 0; i < HARDNESS.addBishops; i++) placeStrategicBishop();
-      placeThreatKnights();
-    }
 
     function countBlackPieces(){
       let n = 0;
