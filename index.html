@@ -482,6 +482,7 @@
     function enforceForcedPawnCaptures(){
       if (player.type !== "P") return;
       let placed = 0;
+      const targetCaptures = randInt(HARDNESS.minForcedPawnCaptures, HARDNESS.maxForcedPawnCaptures);
       const candidates = [
         { r: player.row + 1, c: player.col + 1 },
         { r: player.row + 1, c: player.col - 1 },
@@ -492,7 +493,7 @@
       for (const { r, c } of candidates){
         if (!inBounds(r, c)) continue;
         if (!board[r][c]){ board[r][c] = { color: BLACK, type: "P" }; placed++; }
-        if (placed >= randInt(HARDNESS.minForcedPawnCaptures, HARDNESS.maxForcedPawnCaptures)) break;
+        if (placed >= targetCaptures) break;
       }
     }
 
@@ -513,8 +514,15 @@
       const col = randInt(0, BOARD_COLS - 1);
       if (!board[row][col]){
         board[row][col] = { color: BLACK, type: "R" };
-        if (Math.random() < 0.5){ clearRay(row, col, 0, Math.sign(player.col - col) || 1); }
-        else { clearRay(row, col, Math.sign(player.row - row) || 1, 0); }
+        if (Math.random() < 0.5){
+          // Horizontal ray: choose direction based on player column, default to random if equal
+          const dc = player.col !== col ? Math.sign(player.col - col) : (Math.random() < 0.5 ? -1 : 1);
+          clearRay(row, col, 0, dc);
+        } else {
+          // Vertical ray: choose direction based on player row, default to upward if equal
+          const dr = player.row !== row ? Math.sign(player.row - row) : 1;
+          clearRay(row, col, dr, 0);
+        }
       }
     }
 
