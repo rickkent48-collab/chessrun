@@ -22,6 +22,12 @@
 
       /* Slow, smooth scroll duration for advancing */
       --advance-duration: 2400ms;
+
+      /* Piece outline variables */
+      --piece-outline-w: 2px;     /* same thickness as current blue pawn outline */
+      --gold-dark: #A67C00;       /* dark gold outline */
+      --blue-dark: #0D47A1;       /* dark blue outline */
+      --red-dark:  #8B0000;       /* dark red outline */
     }
 
     html,body{
@@ -103,10 +109,10 @@
 
     /* Piece visuals: user (white) rich royal gold, opponent (black) rich bold blue */
     .piece{ position:relative; z-index:2; font-family: "Boogaloo", system-ui; }
-    .white{ color: var(--gold); text-shadow:none; }  /* royal gold (slightly darker, still bright) */
-    .black{ color:#1976D2; text-shadow:none; }  /* rich bold blue (slightly darker, still bright) */
-    .danger{ color: var(--danger) !important; } /* killer highlight is RED now */
-    .piece svg{ width:calc(var(--square-size) * 0.7); height:calc(var(--square-size) * 0.7); }
+    .white{ color: var(--gold); text-shadow:none; -webkit-text-stroke: var(--piece-outline-w) var(--gold-dark); }  /* royal gold (slightly darker, still bright) */
+    .black{ color:#1976D2; text-shadow:none; -webkit-text-stroke: var(--piece-outline-w) var(--blue-dark); }  /* rich bold blue (slightly darker, still bright) */
+    .danger{ color: var(--danger) !important; -webkit-text-stroke: var(--piece-outline-w) var(--red-dark) !important; } /* killer highlight is RED now */
+    .piece svg{ width:calc(var(--square-size) * 0.65); height:calc(var(--square-size) * 0.65); }
 
     /* Under-board controls */
     .controls{
@@ -1643,9 +1649,8 @@
     // Pawn SVG; user (white) = rich royal gold, opposition (black) = rich bold blue; killer highlight = RED
     function pawnSVG(color, highlight=false){
       const isWhite = (color === WHITE);
-      // For white, use currentColor so it inherits from .white (var(--gold))
-      const fill = isWhite ? "currentColor" : (highlight ? "#D32F2F" : "#1976D2");
-      const stroke = isWhite ? "currentColor" : (highlight ? "#8B0000" : "#0D47A1");
+      const fill = isWhite ? getComputedStyle(document.documentElement).getPropertyValue('--gold').trim() : (highlight ? '#D32F2F' : '#1976D2');
+      const stroke = isWhite ? getComputedStyle(document.documentElement).getPropertyValue('--gold-dark').trim() : (highlight ? getComputedStyle(document.documentElement).getPropertyValue('--red-dark').trim() : getComputedStyle(document.documentElement).getPropertyValue('--blue-dark').trim());
       return `
         <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
           <circle cx="50" cy="24" r="14" fill="${fill}" stroke="${stroke}" stroke-width="2"/>
