@@ -1649,8 +1649,11 @@
     // Pawn SVG; user (white) = rich royal gold, opposition (black) = rich bold blue; killer highlight = RED
     function pawnSVG(color, highlight=false){
       const isWhite = (color === WHITE);
-      const fill = isWhite ? getComputedStyle(document.documentElement).getPropertyValue('--gold').trim() : (highlight ? '#D32F2F' : '#1976D2');
-      const stroke = isWhite ? getComputedStyle(document.documentElement).getPropertyValue('--gold-dark').trim() : (highlight ? getComputedStyle(document.documentElement).getPropertyValue('--red-dark').trim() : getComputedStyle(document.documentElement).getPropertyValue('--blue-dark').trim());
+      const rootStyle = getComputedStyle(document.documentElement);
+      const fill = isWhite ? rootStyle.getPropertyValue('--gold').trim() : (highlight ? '#D32F2F' : '#1976D2');
+      const stroke = isWhite ? rootStyle.getPropertyValue('--gold-dark').trim() : 
+                     (highlight ? rootStyle.getPropertyValue('--red-dark').trim() : 
+                      rootStyle.getPropertyValue('--blue-dark').trim());
       return `
         <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
           <circle cx="50" cy="24" r="14" fill="${fill}" stroke="${stroke}" stroke-width="2"/>
