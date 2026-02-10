@@ -578,8 +578,9 @@
           const key = r+","+c;
           if (protectedSquares.has(key)) continue;
           if (board[r][c]) continue;
-          // Favor placing sliding attackers to create danger corridors
-          const t = Math.random() < 0.5 ? "B" : (Math.random() < 0.5 ? "R" : "Q");
+          // Select sliding attackers with equal probability
+          const rand = Math.random();
+          const t = rand < 0.33 ? "B" : (rand < 0.67 ? "R" : "Q");
           placePiece(r, c, { color: BLACK, type: t });
           batch.push({r,c}); placed++;
           if (placed % 6 === 0){
@@ -587,8 +588,10 @@
             if (!(ok && ok.path && ok.path.length)){
               // revert last batch
               for (const b of batch){ placePiece(b.r, b.c, null); }
+              placed -= batch.length;
               batch.length = 0;
             } else {
+              batch.length = 0;
               if (placed / (BOARD_ROWS*BOARD_COLS) >= desiredDensity) return;
             }
           }
