@@ -957,7 +957,7 @@
 
         const pathSet = new Set(res.path.map(p => keyOf(p.r, p.c)));
 
-        // Pass A: heavy clutter off-path (existing logic, but stronger)
+        // Pass A: heavy clutter off-path (existing logic with updated intensity values)
         for (let r=1; r<=TOP_ROW-1; r++){
           for (let c=0; c<BOARD_COLS; c++){
             const k = keyOf(r,c);
@@ -987,7 +987,7 @@
           if (board[r][c]) continue;             // keep existing pieces
           if (Math.random() > 0.65) continue;    // moderate frequency
           const weights = OPP_WEIGHTS.near[stage];
-          const t = pickFromSubset(weights, ["r","b","n","p"]); // diverse blockers
+          const t = pickFromSubset(weights, ["r","b","n","p"]); // use rook, bishop, knight, pawn for varied blocking patterns
           board[r][c] = { color: BLACK, type: t };
           let attacksPath = false;
           for (const pk of pathSet){
@@ -1004,7 +1004,7 @@
           return true;
         } else {
           board = original;
-          intensity = Math.max(0.5, intensity * 0.9); // reduce slightly, keep it strong
+          intensity = Math.max(0.5, intensity * 0.9); // reduce by 10% per attempt, but maintain minimum 0.5 to preserve difficulty
         }
       }
       return false;
