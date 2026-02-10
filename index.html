@@ -593,7 +593,10 @@
             for (const [dr, dc] of [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]]){
               const rr = r + dr, cc = c + dc;
               if (inBounds(rr, cc) && board[rr][cc] && board[rr][cc].color === BLACK){
-                board[rr][cc] = null; // free the line
+                // Only remove if not in protectedSquares
+                if (!protectedSquares.has(keyOf(rr, cc))){
+                  board[rr][cc] = null; // free the line
+                }
               }
             }
           }
