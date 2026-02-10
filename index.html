@@ -575,6 +575,7 @@
     // Increase attack density safely by adding more sliding attackers
     function increaseAttackDensitySafely(protectedSquares, stage){
       const desiredDensity = ATTACK_DENSITY_TARGETS[stage];
+      const totalSquares = BOARD_ROWS * BOARD_COLS;
       let placed = 0;
       const batch = [];
       for (let r=1; r<BOARD_ROWS; r++){
@@ -596,7 +597,7 @@
               batch.length = 0;
             } else {
               batch.length = 0;
-              if (placed / (BOARD_ROWS*BOARD_COLS) >= desiredDensity) return;
+              if (placed / totalSquares >= desiredDensity) return;
             }
           }
         }
