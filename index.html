@@ -386,15 +386,15 @@
     };
 
     const OPP_COUNTS = [
-      [10, 16],   // Pawn
-      [12, 18],   // King
-      [14, 20],   // Knight
-      [15, 22],   // Bishop
-      [16, 24],   // Rook
-      [18, 26],   // Queen
+      [16, 24],   // Pawn
+      [18, 26],   // King
+      [20, 28],   // Knight
+      [22, 30],   // Bishop
+      [24, 32],   // Rook
+      [26, 34],   // Queen
     ];
 
-    const CONSTRICTION = [0.35, 0.5, 0.6, 0.7, 0.8, 0.85];
+    const CONSTRICTION = [0.45, 0.58, 0.68, 0.78, 0.86, 0.9];
 
     function currentStage(){ return STAGE_INDEX[player.type] ?? 0; }
 
@@ -568,12 +568,67 @@
       return false;
     }
 
+    // Place direct blockers ahead in player's column and adjacent columns
+    function reinforceForwardThreats(protectedSquares){
+      const c = player.col;
+      for (let offset = 1; offset <= 3; offset++){
+        const r = player.row + offset;
+        for (const cc of [c-1, c, c+1]){
+          if (!inBounds(r, cc) || !isEmpty(r, cc)) continue;
+          // Prefer long-range attackers to create more death squares
+          const type = pickFromSubset({ r:0.5, b:0.5, q:0.4, n:0.3, k:0.2, p:0.1 }, ["r","b","q","n","k","p"]);
+          placePiece(r, cc, { color: BLACK, type: type.toUpperCase() });
+        }
+      }
+    }
+
+    // Ensure rooks/bishops have clear lines to attack path squares (free them from being covered)
+    function freeLongRangeAttackLines(protectedSquares){
+      for (let r = 0; r < BOARD_ROWS; r++){
+        for (let c = 0; c < BOARD_COLS; c++){
+          const p = board[r][c];
+          if (!p || p.color !== BLACK) continue;
+          if (p.type === "R" || p.type === "B" || p.type === "Q"){
+            // Clear immediate blockers in primary directions to open lines
+            for (const [dr, dc] of [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]]){
+              const rr = r + dr, cc = c + dc;
+              if (inBounds(rr, cc) && board[rr][cc] && board[rr][cc].color === BLACK){
+                board[rr][cc] = null; // free the line
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // For pawns: require a minimum number of capture events along the safe path
+    function ensureMinPawnCaptures(minCaps){
+      // Seed adjacent diagonals with capturable pieces to force captures
+      for (let r = 1; r < BOARD_ROWS; r++){
+        for (const dc of [-1, 1]){
+          const cc = player.col + dc;
+          if (inBounds(r, cc) && isEmpty(r, cc)){
+            placePiece(r, cc, { color: BLACK, type: pickFromSubset({p:1, n:0.4, b:0.6}, ["p","n","b"]).toUpperCase() });
+            if (--minCaps <= 0) return;
+          }
+        }
+      }
+    }
+
+    // For non-pawns: enforce lateral/backtrack steps by blocking straight-forward progress
+    function enforceLateralBacktrackForNonPawn(){
+      const c = player.col;
+      for (let r = 1; r <= Math.min(BOARD_ROWS-2, 6); r++){
+        if (isEmpty(r, c)) placePiece(r, c, { color: BLACK, type: pickFromSubset({n:0.5, b:0.5, r:0.5}, ["n","b","r"]).toUpperCase() });
+      }
+    }
+
     function generatePuzzleSegment(){
       let attempts = 0;
       const stage = currentStage();
       const [minOpp, maxOpp] = OPP_COUNTS[stage];
 
-      while (attempts < 30){
+      while (attempts < 60){ // allow more attempts for harder but solvable boards
         const savedCol = player.col;
         board = createEmptyBoard();
         player.row = 0; player.col = savedCol;
@@ -593,11 +648,18 @@
         const targetOpp = randInt(minOpp, maxOpp);
         placeOppositionWithConstraints(targetOpp, protectedSquares);
 
+        // Hardening steps: direct threats, long-range pressure, and movement complexity
+        reinforceForwardThreats(protectedSquares);
+        freeLongRangeAttackLines(protectedSquares);
         if (player.type === "P"){
+          ensureMinPawnCaptures(3);
           restrictFirstOppositionInAdjacentColumns(protectedSquares);
           enforceMandatoryAdjacentRook(protectedSquares);
+        } else {
+          enforceLateralBacktrackForNonPawn();
         }
 
+        // Validate solvability (must still have a safe path)
         const res = bfsSafePath(board, player.type);
         if (res && res.path && res.path.length){
           enforceOppositionCountRange(minOpp, maxOpp, protectedSquares);
@@ -605,16 +667,23 @@
           if (res2 && res2.path && res2.path.length) return;
         }
 
+        // Repairs and retry if not solvable
         repairEarlyRows(protectedSquares);
         enforceOppositionCountRange(minOpp, maxOpp, protectedSquares);
         attempts++;
       }
 
+      // Fallback construction with hardened constraints
       for (let r=1;r<=3;r++){ board[r][player.col] = null; guardSquareFromAttackWithImmutables(r, player.col, mandatoryRookKeys); }
       placeOppositionWithConstraints(randInt(minOpp, maxOpp), new Set());
+      reinforceForwardThreats(new Set());
+      freeLongRangeAttackLines(new Set());
       if (player.type === "P"){
         enforceMandatoryAdjacentRook(new Set());
         ensureTwoPawnDecisionEvents(new Set());
+        ensureMinPawnCaptures(3);
+      } else {
+        enforceLateralBacktrackForNonPawn();
       }
       enforceOppositionCountRange(minOpp, maxOpp, new Set());
     }
