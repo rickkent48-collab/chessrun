@@ -573,7 +573,7 @@
       const stage = currentStage();
       const [minOpp, maxOpp] = OPP_COUNTS[stage];
 
-      while (attempts < 30){
+      while (attempts < 40){ // allow a few more attempts to find solvable but harder boards
         const savedCol = player.col;
         board = createEmptyBoard();
         player.row = 0; player.col = savedCol;
@@ -585,13 +585,20 @@
         const ok = buildTruthPathWithForcedSwitch(protectedSquares);
         if (!ok){ attempts++; continue; }
 
+        // Increase pawn complexity and add multiple switches
+        if (player.type === 'P') ensurePawnComplexity(protectedSquares);
+        enforceMultipleSwitches(protectedSquares);
+
         if (player.type === "P"){
           const successTwo = ensureTwoPawnDecisionEvents(protectedSquares);
           if (!successTwo){ attempts++; continue; }
         }
 
+        // Place opposition as before, then free lines and saturate forward attack coverage
         const targetOpp = randInt(minOpp, maxOpp);
         placeOppositionWithConstraints(targetOpp, protectedSquares);
+        freeLinePieces();
+        saturateForwardAttackCoverage(protectedSquares);
 
         if (player.type === "P"){
           restrictFirstOppositionInAdjacentColumns(protectedSquares);
@@ -1755,6 +1762,95 @@
         return false;
       }
       return false;
+    }
+
+    // --------------------- Enhanced Difficulty Helpers ---------------------
+    // Ensure pawns have more decision points (captures / lateral) and occasional backtrack moments
+    function ensurePawnComplexity(protectedSquares){
+      // Build extra decision/capture points by attacking forward squares while keeping alternates safe
+      // Target at least 3 decision events for pawns
+      const minDecisions = 3;
+      let decisions = 0;
+      // Bias attacks into the player's column and adjacent columns ahead
+      const c = player.col;
+      for (let r = 1; r < TOP_ROW && decisions < minDecisions; r++){
+        for (const cc of [c, c-1, c+1]){
+          if (!inBounds(r, cc)) continue;
+          const k = keyOf(r, cc);
+          // Avoid protected squares along the truth path
+          if (protectedSquares.has(k)) continue;
+          if (isEmpty(r, cc)){
+            // Place a strategically dangerous piece
+            const type = (Math.random() < 0.5) ? 'r' : 'b';
+            placePiece(r, cc, { color: BLACK, type: type, highlight: false });
+            decisions++;
+          }
+        }
+      }
+    }
+
+    // Free line pieces (rooks/bishops) so their attack lines are unobstructed
+    function freeLinePieces(){
+      // For every rook/bishop, clear any blocking black piece in their direct lines
+      for (let r = 0; r < BOARD_ROWS; r++){
+        for (let c = 0; c < BOARD_COLS; c++){
+          const p = board[r][c];
+          if (!p || p.color !== BLACK) continue;
+          if (p.type === 'r'){
+            // Clear vertical lines
+            for (let rr = r+1; rr < BOARD_ROWS; rr++){ if (board[rr][c] && board[rr][c].color === BLACK) board[rr][c] = null; }
+            for (let rr = r-1; rr >= 0; rr--){ if (board[rr][c] && board[rr][c].color === BLACK) board[rr][c] = null; }
+            // Clear horizontal lines
+            for (let cc = c+1; cc < BOARD_COLS; cc++){ if (board[r][cc] && board[r][cc].color === BLACK) board[r][cc] = null; }
+            for (let cc = c-1; cc >= 0; cc--){ if (board[r][cc] && board[r][cc].color === BLACK) board[r][cc] = null; }
+          } else if (p.type === 'b'){
+            // Clear diagonals
+            for (let d=1; inBounds(r+d,c+d); d++){ if (board[r+d][c+d] && board[r+d][c+d].color === BLACK) board[r+d][c+d] = null; }
+            for (let d=1; inBounds(r+d,c-d); d++){ if (board[r+d][c-d] && board[r+d][c-d].color === BLACK) board[r+d][c-d] = null; }
+            for (let d=1; inBounds(r-d,c+d); d++){ if (board[r-d][c+d] && board[r-d][c+d].color === BLACK) board[r-d][c+d] = null; }
+            for (let d=1; inBounds(r-d,c-d); d++){ if (board[r-d][c-d] && board[r-d][c-d].color === BLACK) board[r-d][c-d] = null; }
+          }
+        }
+      }
+    }
+
+    // Saturate forward lanes with attack coverage while preserving a solvable alternate path
+    function saturateForwardAttackCoverage(protectedSquares){
+      const pc = player.col;
+      // Attack squares ahead in the player's column and adjacent columns
+      for (let r = 1; r < TOP_ROW; r++){
+        for (const cc of [pc-1, pc, pc+1]){
+          if (!inBounds(r, cc)) continue;
+          const k = keyOf(r, cc);
+          if (protectedSquares.has(k)) continue; // leave truth path alternatives safe
+          // Prefer line pieces with strong projection
+          if (isEmpty(r, cc)){
+            const type = (Math.random() < 0.6) ? 'r' : 'b';
+            placePiece(r, cc, { color: BLACK, type: type, highlight: false });
+          }
+        }
+      }
+    }
+
+    // Add more forced switches/backtracks to make the path zig-zag and less obvious
+    function enforceMultipleSwitches(protectedSquares){
+      // Introduce 2–3 switch points at random rows
+      const switchCount = 2 + randInt(0, 1);
+      const chosen = new Set();
+      while (chosen.size < switchCount){
+        const sr = randInt(2, Math.min(TOP_ROW-2, 8));
+        chosen.add(sr);
+      }
+      for (const sr of chosen){
+        // Attack squares directly ahead at the switch row so the player must go sideways/back first
+        const c = player.col;
+        for (const cc of [c-1, c, c+1]){
+          if (!inBounds(sr, cc)) continue;
+          const k = keyOf(sr, cc);
+          if (protectedSquares.has(k)) continue;
+          if (isEmpty(sr, cc)) placePiece(sr, cc, { color: BLACK, type: 'r', highlight: false });
+        }
+      }
     }
   </script>
 </body>
