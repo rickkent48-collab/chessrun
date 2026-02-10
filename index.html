@@ -9,6 +9,9 @@
   <style>
     :root{
       --gold: #FFD700; /* bolder, unified gold used everywhere */
+      --gold-dark: #A67C00;      /* dark gold for outlines */
+      --blue-outline: #0D47A1;   /* dark blue outline */
+      --red-outline:  #8B0000;   /* dark red outline */
       --board-cols: 8;
       --board-rows: 11;
       --square-size: calc(100vw / var(--board-cols));
@@ -106,7 +109,27 @@
     .white{ color: var(--gold); text-shadow:none; }  /* royal gold (slightly darker, still bright) */
     .black{ color:#1976D2; text-shadow:none; }  /* rich bold blue (slightly darker, still bright) */
     .danger{ color: var(--danger) !important; } /* killer highlight is RED now */
-    .piece svg{ width:calc(var(--square-size) * 0.7); height:calc(var(--square-size) * 0.7); }
+    .piece svg{ width: calc(var(--square-size) * 0.62); height: calc(var(--square-size) * 0.62); display:block; }
+
+    /* Outer-only 1px outlines via drop-shadows (no inner holes outlined) */
+    .piece.white{
+      filter: drop-shadow(1px 0 0 var(--gold-dark))
+              drop-shadow(-1px 0 0 var(--gold-dark))
+              drop-shadow(0 1px 0 var(--gold-dark))
+              drop-shadow(0 -1px 0 var(--gold-dark));
+    }
+    .piece.black{
+      filter: drop-shadow(1px 0 0 var(--blue-outline))
+              drop-shadow(-1px 0 0 var(--blue-outline))
+              drop-shadow(0 1px 0 var(--blue-outline))
+              drop-shadow(0 -1px 0 var(--blue-outline));
+    }
+    .piece.danger{
+      filter: drop-shadow(1px 0 0 var(--red-outline))
+              drop-shadow(-1px 0 0 var(--red-outline))
+              drop-shadow(0 1px 0 var(--red-outline))
+              drop-shadow(0 -1px 0 var(--red-outline));
+    }
 
     /* Under-board controls */
     .controls{
@@ -1643,12 +1666,12 @@
     // Pawn SVG; user (white) = rich royal gold, opposition (black) = rich bold blue; killer highlight = RED
     function pawnSVG(color, highlight=false){
       const isWhite = (color === WHITE);
-      // For white, use currentColor so it inherits from .white (var(--gold))
-      const fill = isWhite ? "currentColor" : (highlight ? "#D32F2F" : "#1976D2");
-      const stroke = isWhite ? "currentColor" : (highlight ? "#8B0000" : "#0D47A1");
+      // Use currentColor for white, blue, or red (danger) via the piece class; no strokes so inner holes aren't outlined
+      const fill = 'currentColor';
+      const stroke = 'none';
       return `
         <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <circle cx="50" cy="24" r="14" fill="${fill}" stroke="${stroke}" stroke-width="2"/>
+          <circle cx="50" cy="24" r="14" fill="${fill}" stroke="${stroke}" stroke-width="0"/>
           <path d="M35 40
                    C35 36, 65 36, 65 40
                    C65 46, 60 52, 54 56
@@ -1656,9 +1679,9 @@
                    L38 72
                    C38 66, 40 60, 46 56
                    C40 52, 35 46, 35 40Z"
-                fill="${fill}" stroke="${stroke}" stroke-width="2"/>
-          <rect x="28" y="72" width="44" height="8" rx="2" ry="2" fill="${fill}" stroke="${stroke}" stroke-width="2"/>
-          <rect x="22" y="80" width="56" height="8" rx="2" ry="2" fill="${fill}" stroke="${stroke}" stroke-width="2"/>
+                fill="${fill}" stroke="${stroke}" stroke-width="0"/>
+          <rect x="28" y="72" width="44" height="8" rx="2" ry="2" fill="${fill}" stroke="${stroke}" stroke-width="0"/>
+          <rect x="22" y="80" width="56" height="8" rx="2" ry="2" fill="${fill}" stroke="${stroke}" stroke-width="0"/>
         </svg>
       `;
     }
