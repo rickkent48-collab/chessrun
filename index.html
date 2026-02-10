@@ -336,11 +336,13 @@
 
     // Difficulty tuning (no rules change; affects generation only)
     const DIFFICULTY = {
-      pathComplexity: 1.0,           // baseline 1.0; increase lateral/back moves
       pawnRequiredCaptures: 2,       // minimum captures for pawn truth path
       minLateralMovesNonPawn: 2,     // N/B/R/Q/K must include side moves
       minBacktrackEventsNonPawn: 1,  // require a backward step in truth path
-      dangerAmplifyFactor: 1.5,      // amplify attacked squares near forward lanes
+      lateralInjectionProbability: 0.4,   // probability of injecting lateral move
+      backtrackInjectionProbability: 0.3, // probability of injecting backtrack
+      captureInjectionProbability: 0.5,   // probability of injecting capture for pawn
+      dangerZoneTargetRows: [2,3,4,5],    // rows ahead to place danger pieces
       freeSlidingLinesDepth: 3       // ensure rooks/bishops have 3 clear squares of LOS
     };
 
@@ -658,7 +660,7 @@
         // Try to inject complexity for non-pawn types
         if (player.type !== 'P' && r > 2 && r < TOP_ROW - 2){
           // Inject lateral moves
-          if (events.lateral < DIFFICULTY.minLateralMovesNonPawn && Math.random() < 0.4){
+          if (events.lateral < DIFFICULTY.minLateralMovesNonPawn && Math.random() < DIFFICULTY.lateralInjectionProbability){
             const sideOpts = [[r, c-1], [r, c+1]].filter(([rr,cc]) => 
               inBounds(rr,cc) && isEmpty(rr,cc) && landingSafeAfterSimulatedMove(r,c,rr,cc)
             );
@@ -673,7 +675,7 @@
             }
           }
           // Inject backtrack moves
-          if (events.backtrack < DIFFICULTY.minBacktrackEventsNonPawn && r > 3 && Math.random() < 0.3){
+          if (events.backtrack < DIFFICULTY.minBacktrackEventsNonPawn && r > 3 && Math.random() < DIFFICULTY.backtrackInjectionProbability){
             const backOpts = [[r-1, c], [r-2, c]].filter(([rr,cc]) => 
               inBounds(rr,cc) && isEmpty(rr,cc) && landingSafeAfterSimulatedMove(r,c,rr,cc)
             );
@@ -690,7 +692,7 @@
         }
 
         // Try to inject captures for pawn
-        if (player.type === 'P' && events.captures < DIFFICULTY.pawnRequiredCaptures && r > 1 && r < TOP_ROW - 1 && Math.random() < 0.5){
+        if (player.type === 'P' && events.captures < DIFFICULTY.pawnRequiredCaptures && r > 1 && r < TOP_ROW - 1 && Math.random() < DIFFICULTY.captureInjectionProbability){
           const capOpts = [[nextR, c-1], [nextR, c+1]].filter(([rr,cc]) => inBounds(rr,cc));
           if (capOpts.length){
             const [rr,cc] = capOpts[Math.floor(Math.random() * capOpts.length)];
@@ -1126,7 +1128,7 @@
 
     function amplifyDangerZones(protectedSquares){
       // Target rows ahead of player and central columns to increase attacked coverage
-      const targetRows = [2,3,4,5];
+      const targetRows = DIFFICULTY.dangerZoneTargetRows;
       for (const rr of targetRows){
         for (let cc = Math.max(0, player.col-1); cc <= Math.min(BOARD_COLS-1, player.col+1); cc++){
           const k = keyOf(rr,cc);
