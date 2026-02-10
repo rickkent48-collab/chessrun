@@ -1836,17 +1836,19 @@
 
     // Add more forced switches/backtracks to make the path zig-zag and less obvious
     function enforceMultipleSwitches(protectedSquares){
-      // Introduce 2–3 switch points at random rows (randInt(0,1) returns 0 or 1)
-      const maxRow = Math.min(TOP_ROW-2, 8);
+      // Introduce 2–3 switch points at random rows
+      const maxRow = Math.min(TOP_ROW-2, 8); // Cap at row 8 to ensure switches happen in lower/middle board
       if (maxRow < 2) return; // Not enough rows for switches
       
-      const switchCount = Math.min(2 + randInt(0, 1), maxRow - 1);
+      const switchCount = Math.min(randInt(2, 3), maxRow - 1); // 2 or 3 switches
       const chosen = new Set();
       let attempts = 0;
       while (chosen.size < switchCount && attempts < 50){
+        const prevSize = chosen.size;
         const sr = randInt(2, maxRow);
         chosen.add(sr);
-        attempts++;
+        if (chosen.size > prevSize) attempts = 0; // Reset counter on successful add
+        else attempts++; // Only count failed attempts
       }
       for (const sr of chosen){
         // Attack squares directly ahead at the switch row so the player must go sideways/back first
