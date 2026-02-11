@@ -1036,7 +1036,7 @@
       const keepCount = Math.min(maxChannels, cols.length);
       const keepCols = new Set(cols.slice(0, keepCount));
 
-      const stage = currentStage(); // Cache stage value
+      const stage = currentStage();
       const weights = OPP_WEIGHTS.far[stage];
 
       // For frontiers not in keepCols and not on the truth path, place blocking pieces that do not attack truth path
