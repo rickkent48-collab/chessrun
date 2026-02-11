@@ -1003,7 +1003,7 @@
     }
 
     // Compute safe frontiers per row: squares from which a safe path to TOP_ROW could exist
-    function computeSafeFrontiers(b){
+    function computeSafeFrontiers(){
       const frontiers = Array.from({length: BOARD_ROWS}, () => new Set());
       // Mark squares that are currently empty or white and not attacked
       for (let r=0; r<BOARD_ROWS; r++){
@@ -1017,7 +1017,7 @@
 
     // Select at most maxChannels columns to keep as potential paths; block others
     function pruneSafeChannels(maxChannels, pathSet){
-      const frontiers = computeSafeFrontiers(board);
+      const frontiers = computeSafeFrontiers();
       // Identify candidate columns by presence across rows
       const colScore = new Map();
       for (let r=1; r<=TOP_ROW; r++){
@@ -1027,8 +1027,8 @@
         }
       }
       const cols = Array.from(colScore.entries()).sort((a,b)=>b[1]-a[1]).map(e=>e[0]);
-      if (!cols.length) return true; // nothing to prune
-      const keepCount = Math.max(2, Math.min(3, Math.floor(Math.random()*2)+2)); // 2 or 3
+      if (!cols.length) return; // nothing to prune
+      const keepCount = Math.min(maxChannels, cols.length);
       const keepCols = new Set(cols.slice(0, keepCount));
 
       // For frontiers not in keepCols and not on the truth path, place blocking pieces that do not attack truth path
@@ -1052,7 +1052,6 @@
           if (attacksPath){ board[rr][cc] = null; }
         }
       }
-      return true;
     }
 
     function guardStartSquare(){
