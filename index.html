@@ -516,10 +516,11 @@
       if (musicStarted) return;
       const audio = document.getElementById("bgMusic");
       if (audio) {
-        audio.play().catch(() => {
+        audio.play().then(() => {
+          musicStarted = true;
+        }).catch(() => {
           // Autoplay blocked, will retry on next interaction
         });
-        musicStarted = true;
       }
     }
 
