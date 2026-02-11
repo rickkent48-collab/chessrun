@@ -568,7 +568,9 @@
         if (musicEnabled){ await startMusic(); if (legacyBgm){ legacyBgm.muted = true; } }
         else { stopMusic(); if (legacyBgm){ try{ legacyBgm.pause(); legacyBgm.currentTime = 0; }catch(e){} } }
       }
-      musicToggleBtn?.addEventListener("click", async function(){
+      musicToggleBtn?.addEventListener("click", async function(e){
+        // Prevent event bubbling to avoid closing the settings dialog
+        e.stopPropagation();
         // The toggle click is a user gesture; ensure audio context is resumed
         await ensureAudioContext();
         await toggleMusic();
