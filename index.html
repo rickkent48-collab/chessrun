@@ -321,7 +321,7 @@
         <div class="stats-spacer"></div>
         <div class="stats-list">
           <div class="stat-row" style="justify-content:center;">
-            <button id="musicToggleBtn" class="play-btn" type="button">Music Enabled</button>
+            <button id="musicToggleBtn" class="play-btn" type="button" aria-pressed="true">Music Enabled</button>
           </div>
         </div>
         <div class="stats-spacer"></div>
@@ -338,7 +338,8 @@
     let audioCtx = null;
     let musicBuffer = null;
     let musicSource = null;
-    let musicEnabled = true; // default enabled; reflects button text
+    // Load music preference from localStorage or default to enabled
+    let musicEnabled = localStorage.getItem('chessrun-music-enabled') !== 'false';
 
     // If legacy <audio id="bgMusic"> exists, ensure it never plays alongside Web Audio
     const legacyBgm = document.getElementById('bgMusic');
@@ -354,11 +355,17 @@
 
     async function loadMusicBuffer(){
       if (musicBuffer) return musicBuffer;
-      await ensureAudioContext();
-      const resp = await fetch('CS1.mp3', { cache: 'force-cache' });
-      const arr = await resp.arrayBuffer();
-      musicBuffer = await audioCtx.decodeAudioData(arr);
-      return musicBuffer;
+      try {
+        await ensureAudioContext();
+        const resp = await fetch('CS1.mp3', { cache: 'force-cache' });
+        if (!resp.ok) throw new Error('Failed to load music file');
+        const arr = await resp.arrayBuffer();
+        musicBuffer = await audioCtx.decodeAudioData(arr);
+        return musicBuffer;
+      } catch(e) {
+        console.warn('Music load failed:', e);
+        return null;
+      }
     }
 
     function stopMusic(){
@@ -372,10 +379,11 @@
     async function startMusic(){
       if (!musicEnabled) return;
       await ensureAudioContext();
-      await loadMusicBuffer();
+      const buffer = await loadMusicBuffer();
+      if (!buffer) return; // Failed to load music
       stopMusic(); // ensure single instance
       musicSource = audioCtx.createBufferSource();
-      musicSource.buffer = musicBuffer;
+      musicSource.buffer = buffer;
       musicSource.loop = true; // gapless loop over decoded buffer
       const gain = audioCtx.createGain();
       gain.gain.value = 1.0; // full volume (no slider now); can adjust if needed
@@ -561,12 +569,24 @@
       function updateToggleText(){
         if (!musicToggleBtn) return;
         musicToggleBtn.textContent = musicEnabled ? 'Music Enabled' : 'Music Disabled';
+        musicToggleBtn.setAttribute('aria-pressed', musicEnabled ? 'true' : 'false');
       }
       async function toggleMusic(){
         musicEnabled = !musicEnabled;
+        localStorage.setItem('chessrun-music-enabled', String(musicEnabled));
         updateToggleText();
-        if (musicEnabled){ await startMusic(); if (legacyBgm){ legacyBgm.muted = true; } }
-        else { stopMusic(); if (legacyBgm){ try{ legacyBgm.pause(); legacyBgm.currentTime = 0; }catch(e){} } }
+        if (musicEnabled) {
+          await startMusic();
+          if (legacyBgm) { legacyBgm.muted = true; }
+        } else {
+          stopMusic();
+          if (legacyBgm) {
+            try {
+              legacyBgm.pause();
+              legacyBgm.currentTime = 0;
+            } catch(e) {}
+          }
+        }
       }
       musicToggleBtn?.addEventListener("click", async function(e){
         // Prevent event bubbling to avoid closing the settings dialog
