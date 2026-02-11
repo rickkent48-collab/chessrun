@@ -511,16 +511,18 @@
       const volumeSlider = document.getElementById("volumeSlider");
       const audio = document.getElementById("bgMusic");
       
-      // Load saved volume or default to 100
-      const savedVolume = localStorage.getItem("chessrun-volume") || "100";
-      volumeSlider.value = savedVolume;
-      audio.volume = parseInt(savedVolume, 10) / 100;
-      
-      volumeSlider.addEventListener("input", function() {
-        const volume = parseInt(this.value, 10);
-        audio.volume = volume / 100;
-        localStorage.setItem("chessrun-volume", String(volume));
-      });
+      if (audio) {
+        // Load saved volume or default to 100
+        const savedVolume = localStorage.getItem("chessrun-volume") || "100";
+        volumeSlider.value = savedVolume;
+        audio.volume = parseInt(savedVolume, 10) / 100;
+        
+        volumeSlider.addEventListener("input", function() {
+          const volume = parseInt(this.value, 10);
+          audio.volume = volume / 100;
+          localStorage.setItem("chessrun-volume", String(volume));
+        });
+      }
 
       // Tap-to-move
       $board.addEventListener("click", onBoardClick);
