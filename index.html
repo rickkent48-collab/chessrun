@@ -986,11 +986,13 @@
 
         const res2 = bfsSafePath(board, player.type);
         if (res2 && res2.path && res2.path.length){
-          // Optional: secondary pruning pass to increase difficulty while capping channels
+          // Optional: secondary pruning pass to increase difficulty (50% chance for variability)
+          // This creates boards with varying difficulty: sometimes 2 channels, sometimes 3
           if (Math.random() < 0.5){ 
             pruneSafeChannels(2, pathSet); 
             const res3 = bfsSafePath(board, player.type);
             if (res3 && res3.path && res3.path.length){ return true; }
+            // If secondary pruning fails, revert and retry from scratch
           } else {
             return true;
           }
@@ -1031,6 +1033,9 @@
       const keepCount = Math.min(maxChannels, cols.length);
       const keepCols = new Set(cols.slice(0, keepCount));
 
+      const stage = currentStage(); // Cache stage value for efficiency
+      const weights = OPP_WEIGHTS.far[stage];
+
       // For frontiers not in keepCols and not on the truth path, place blocking pieces that do not attack truth path
       for (let r=1; r<=TOP_ROW-1; r++){
         for (const k of frontiers[r]){
@@ -1039,8 +1044,6 @@
           if (pathSet.has(k)) continue; // never block truth path squares
           if (board[rr][cc]) continue;
           // Choose a blocker biased to create complexity but avoid attacking truth path
-          const stage = currentStage();
-          const weights = OPP_WEIGHTS.far[stage];
           const t = pickFromSubset(weights, ["r","b","q"]);
           board[rr][cc] = { color: BLACK, type: t };
           // If this newly placed piece attacks any truth-path square, remove it
