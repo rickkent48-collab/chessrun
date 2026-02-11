@@ -276,6 +276,7 @@
       <img id="menuTitle" class="menu-logo" src="data:image/png;base64,PASTE BASE64 STRING HERE" alt="Chess Run logo" />
       <button id="playBtn" class="play-btn" type="button">Start</button>
       <button id="statsBtn" class="play-btn" type="button">Stats</button>
+      <button id="settingsBtn" class="play-btn" type="button">Settings</button>
     </div>
   </div>
 
@@ -306,6 +307,23 @@
 
           <div class="stat-row stat-white"><span>Average Captures</span><span id="statAvgTakes">0</span></div>
           <div class="stat-blank">&nbsp;</div>
+        </div>
+        <div class="stats-spacer"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="settings" class="stats" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+    <div id="settingsBackdrop" class="stats-backdrop" aria-hidden="true"></div>
+    <div id="settingsSheet" class="stats-sheet">
+      <div class="stats-inner">
+        <div id="settingsTitle" class="stats-title">Settings</div>
+        <div class="stats-spacer"></div>
+        <div class="stat-blank">&nbsp;</div>
+        <div class="stat-row stat-white"><span>Music</span></div>
+        <div class="stat-blank">&nbsp;</div>
+        <div style="width: 100%; padding: 0 10px; box-sizing: border-box;">
+          <input type="range" id="volumeSlider" min="0" max="100" value="100" style="width: 100%; accent-color: var(--gold);" />
         </div>
         <div class="stats-spacer"></div>
       </div>
@@ -466,6 +484,10 @@
     function showStats(){ renderStats(); document.getElementById("stats").classList.add("show"); }
     function hideStats(){ document.getElementById("stats").classList.remove("show"); }
 
+    // Settings popup
+    function showSettings(){ document.getElementById("settings").classList.add("show"); }
+    function hideSettings(){ document.getElementById("settings").classList.remove("show"); }
+
     // Init
     init();
     function init(){
@@ -480,6 +502,27 @@
       document.getElementById("statsBtn").addEventListener("click", showStats);
       document.getElementById("statsBackdrop").addEventListener("click", hideStats);
       document.getElementById("statsSheet").addEventListener("click", hideStats);
+
+      document.getElementById("settingsBtn").addEventListener("click", showSettings);
+      document.getElementById("settingsBackdrop").addEventListener("click", hideSettings);
+      document.getElementById("settingsSheet").addEventListener("click", hideSettings);
+
+      // Volume slider
+      const volumeSlider = document.getElementById("volumeSlider");
+      const audio = document.getElementById("bgMusic");
+      
+      if (audio) {
+        // Load saved volume or default to 100
+        const savedVolume = localStorage.getItem("chessrun-volume") || "100";
+        volumeSlider.value = savedVolume;
+        audio.volume = parseInt(savedVolume, 10) / 100;
+        
+        volumeSlider.addEventListener("input", function() {
+          const volume = parseInt(this.value, 10);
+          audio.volume = volume / 100;
+          localStorage.setItem("chessrun-volume", String(volume));
+        });
+      }
 
       // Tap-to-move
       $board.addEventListener("click", onBoardClick);
