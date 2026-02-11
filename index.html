@@ -319,11 +319,10 @@
       <div class="stats-inner">
         <div id="settingsTitle" class="stats-title">Settings</div>
         <div class="stats-spacer"></div>
-        <div class="stat-blank">&nbsp;</div>
-        <div class="stat-row stat-white"><span>Music</span></div>
-        <div class="stat-blank">&nbsp;</div>
-        <div style="width: 100%; padding: 0 10px; box-sizing: border-box;">
-          <input type="range" id="volumeSlider" min="0" max="100" value="100" style="width: 100%; accent-color: var(--gold);" />
+        <div class="stats-list">
+          <div class="stat-row" style="justify-content:center;">
+            <button id="musicToggleBtn" class="play-btn" type="button">Music Enabled</button>
+          </div>
         </div>
         <div class="stats-spacer"></div>
       </div>
@@ -335,6 +334,59 @@
   </div>
 
   <script>
+    // Gapless looping background music using Web Audio
+    let audioCtx = null;
+    let musicBuffer = null;
+    let musicSource = null;
+    let musicEnabled = true; // default enabled; reflects button text
+
+    // If legacy <audio id="bgMusic"> exists, ensure it never plays alongside Web Audio
+    const legacyBgm = document.getElementById('bgMusic');
+    if (legacyBgm){ try{ legacyBgm.pause(); legacyBgm.muted = true; }catch(e){} }
+
+    async function ensureAudioContext(){
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended'){
+        try { await audioCtx.resume(); } catch(e){}
+      }
+      return audioCtx;
+    }
+
+    async function loadMusicBuffer(){
+      if (musicBuffer) return musicBuffer;
+      await ensureAudioContext();
+      const resp = await fetch('CS1.mp3', { cache: 'force-cache' });
+      const arr = await resp.arrayBuffer();
+      musicBuffer = await audioCtx.decodeAudioData(arr);
+      return musicBuffer;
+    }
+
+    function stopMusic(){
+      if (musicSource){
+        try { musicSource.stop(0); } catch(e){}
+        try { musicSource.disconnect(); } catch(e){}
+        musicSource = null;
+      }
+    }
+
+    async function startMusic(){
+      if (!musicEnabled) return;
+      await ensureAudioContext();
+      await loadMusicBuffer();
+      stopMusic(); // ensure single instance
+      musicSource = audioCtx.createBufferSource();
+      musicSource.buffer = musicBuffer;
+      musicSource.loop = true; // gapless loop over decoded buffer
+      const gain = audioCtx.createGain();
+      gain.gain.value = 1.0; // full volume (no slider now); can adjust if needed
+      musicSource.connect(gain);
+      gain.connect(audioCtx.destination);
+      try { musicSource.start(0); } catch(e){}
+    }
+
+    // Gesture helpers: start music on first user interaction if enabled
+    function tryStartOnGesture(){ if (musicEnabled) startMusic(); }
+
     const BOARD_ROWS = 11;
     const BOARD_COLS = 8;
     const TOP_ROW = BOARD_ROWS - 1;
@@ -370,9 +422,6 @@
     let killerInfo = null; // { row, col, type }
     let captures = 0;
     let boardsInCurrentStage = 0;
-
-    // Background music state
-    let musicStarted = false;
 
     // Set of immutable black pieces (including mandatory rooks and event pieces)
     let mandatoryRookKeys = new Set();
@@ -507,22 +556,29 @@
       document.getElementById("settingsBackdrop").addEventListener("click", hideSettings);
       document.getElementById("settingsSheet").addEventListener("click", hideSettings);
 
-      // Volume slider
-      const volumeSlider = document.getElementById("volumeSlider");
-      const audio = document.getElementById("bgMusic");
-      
-      if (audio) {
-        // Load saved volume or default to 100
-        const savedVolume = localStorage.getItem("chessrun-volume") || "100";
-        volumeSlider.value = savedVolume;
-        audio.volume = parseInt(savedVolume, 10) / 100;
-        
-        volumeSlider.addEventListener("input", function() {
-          const volume = parseInt(this.value, 10);
-          audio.volume = volume / 100;
-          localStorage.setItem("chessrun-volume", String(volume));
-        });
+      // Music toggle button
+      const musicToggleBtn = document.getElementById("musicToggleBtn");
+      function updateToggleText(){
+        if (!musicToggleBtn) return;
+        musicToggleBtn.textContent = musicEnabled ? 'Music Enabled' : 'Music Disabled';
       }
+      async function toggleMusic(){
+        musicEnabled = !musicEnabled;
+        updateToggleText();
+        if (musicEnabled){ await startMusic(); if (legacyBgm){ legacyBgm.muted = true; } }
+        else { stopMusic(); if (legacyBgm){ try{ legacyBgm.pause(); legacyBgm.currentTime = 0; }catch(e){} } }
+      }
+      musicToggleBtn?.addEventListener("click", async function(){
+        // The toggle click is a user gesture; ensure audio context is resumed
+        await ensureAudioContext();
+        await toggleMusic();
+      });
+      updateToggleText();
+
+      // Gesture helpers for autoplay: start music on first user interaction if enabled
+      document.getElementById('playBtn')?.addEventListener('click', tryStartOnGesture);
+      window.addEventListener('pointerdown', tryStartOnGesture, { once: true });
+      window.addEventListener('keydown', tryStartOnGesture, { once: true });
 
       // Tap-to-move
       $board.addEventListener("click", onBoardClick);
@@ -551,20 +607,7 @@
     function showMenu(){ $menu.classList.add("show"); }
     function hideMenu(){ 
       $menu.classList.remove("show"); 
-      startBackgroundMusic();
-    }
-
-    // Background music helper
-    function startBackgroundMusic(){
-      if (musicStarted) return;
-      const audio = document.getElementById("bgMusic");
-      if (audio) {
-        audio.play().then(() => {
-          musicStarted = true;
-        }).catch(() => {
-          // Autoplay blocked, will retry on next interaction
-        });
-      }
+      tryStartOnGesture();
     }
 
     // Board helpers
@@ -1433,9 +1476,6 @@
     // Tap-to-move
     function onBoardClick(e){
       if (gameOver || dragging || isAdvancing) return;
-
-      // Start background music on first interaction
-      startBackgroundMusic();
 
       // If we're in the game-over sequence and waiting for tap, any board tap triggers death
       if (inGameOverSequence && waitingForDeathTap){
