@@ -949,7 +949,7 @@
       const baseIntensity = CONSTRICTION[stage];
 
       let intensity = baseIntensity;
-      for (let attempt = 0; attempt < 5; attempt++){
+      for (let attempt = 0; attempt < 7; attempt++){
         const original = cloneBoard(board);
 
         const res = bfsSafePath(board, player.type);
@@ -957,6 +957,7 @@
 
         const pathSet = new Set(res.path.map(p => keyOf(p.r, p.c)));
 
+        // Existing off-path opposition placement (harder patterns)
         for (let r=1; r<=TOP_ROW-1; r++){
           for (let c=0; c<BOARD_COLS; c++){
             const k = keyOf(r,c);
@@ -980,15 +981,78 @@
 
         enforceOppositionCountRange(minOpp, maxOpp, pathSet);
 
+        // New: limit safe channels to 2 or 3 while preserving the truth path
+        pruneSafeChannels(Math.random() < 0.5 ? 2 : 3, pathSet);
+
         const res2 = bfsSafePath(board, player.type);
         if (res2 && res2.path && res2.path.length){
-          return true;
-        } else {
-          board = original;
-          intensity *= 0.8;
+          // Optional: secondary pruning pass to increase difficulty while capping channels
+          if (Math.random() < 0.5){ 
+            pruneSafeChannels(2, pathSet); 
+            const res3 = bfsSafePath(board, player.type);
+            if (res3 && res3.path && res3.path.length){ return true; }
+          } else {
+            return true;
+          }
         }
+        // revert and reduce intensity, retry
+        board = original;
+        intensity *= 0.85;
       }
       return false;
+    }
+
+    // Compute safe frontiers per row: squares from which a safe path to TOP_ROW could exist
+    function computeSafeFrontiers(b){
+      const frontiers = Array.from({length: BOARD_ROWS}, () => new Set());
+      // Mark squares that are currently empty or white and not attacked
+      for (let r=0; r<BOARD_ROWS; r++){
+        for (let c=0; c<BOARD_COLS; c++){
+          if (!isEmpty(r,c) && !(board[r][c] && board[r][c].color===WHITE)) continue;
+          if (!isSquareAttackedByBlack(r,c)) frontiers[r].add(keyOf(r,c));
+        }
+      }
+      return frontiers;
+    }
+
+    // Select at most maxChannels columns to keep as potential paths; block others
+    function pruneSafeChannels(maxChannels, pathSet){
+      const frontiers = computeSafeFrontiers(board);
+      // Identify candidate columns by presence across rows
+      const colScore = new Map();
+      for (let r=1; r<=TOP_ROW; r++){
+        for (const k of frontiers[r]){
+          const [, cStr] = k.split(","); const c = parseInt(cStr,10);
+          colScore.set(c, (colScore.get(c)||0)+1);
+        }
+      }
+      const cols = Array.from(colScore.entries()).sort((a,b)=>b[1]-a[1]).map(e=>e[0]);
+      if (!cols.length) return true; // nothing to prune
+      const keepCount = Math.max(2, Math.min(3, Math.floor(Math.random()*2)+2)); // 2 or 3
+      const keepCols = new Set(cols.slice(0, keepCount));
+
+      // For frontiers not in keepCols and not on the truth path, place blocking pieces that do not attack truth path
+      for (let r=1; r<=TOP_ROW-1; r++){
+        for (const k of frontiers[r]){
+          const [rrStr, ccStr] = k.split(","); const rr = parseInt(rrStr,10); const cc = parseInt(ccStr,10);
+          if (keepCols.has(cc)) continue;
+          if (pathSet.has(k)) continue; // never block truth path squares
+          if (board[rr][cc]) continue;
+          // Choose a blocker biased to create complexity but avoid attacking truth path
+          const stage = currentStage();
+          const weights = OPP_WEIGHTS.far[stage];
+          const t = pickFromSubset(weights, ["r","b","q"]);
+          board[rr][cc] = { color: BLACK, type: t };
+          // If this newly placed piece attacks any truth-path square, remove it
+          let attacksPath = false;
+          for (const pk of pathSet){
+            const [pr, pc] = pk.split(",").map(Number);
+            if (blackAttacksSquare(t, rr, cc, pr, pc)){ attacksPath = true; break; }
+          }
+          if (attacksPath){ board[rr][cc] = null; }
+        }
+      }
+      return true;
     }
 
     function guardStartSquare(){
