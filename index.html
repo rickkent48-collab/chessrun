@@ -248,6 +248,11 @@
   </style>
 </head>
 <body>
+  <!-- Background music -->
+  <audio id="bgMusic" loop style="display:none;">
+    <source src="CS1.mp3" type="audio/mpeg">
+  </audio>
+
   <div class="wrap">
     <div class="hud">
       <div id="captures" class="captures">0</div>
@@ -347,6 +352,9 @@
     let killerInfo = null; // { row, col, type }
     let captures = 0;
     let boardsInCurrentStage = 0;
+
+    // Background music state
+    let musicStarted = false;
 
     // Set of immutable black pieces (including mandatory rooks and event pieces)
     let mandatoryRookKeys = new Set();
@@ -498,7 +506,23 @@
 
     // Menu helpers
     function showMenu(){ $menu.classList.add("show"); }
-    function hideMenu(){ $menu.classList.remove("show"); }
+    function hideMenu(){ 
+      $menu.classList.remove("show"); 
+      startBackgroundMusic();
+    }
+
+    // Background music helper
+    function startBackgroundMusic(){
+      if (musicStarted) return;
+      const audio = document.getElementById("bgMusic");
+      if (audio) {
+        audio.play().then(() => {
+          musicStarted = true;
+        }).catch(() => {
+          // Autoplay blocked, will retry on next interaction
+        });
+      }
+    }
 
     // Board helpers
     function createEmptyBoard(){
@@ -1366,6 +1390,9 @@
     // Tap-to-move
     function onBoardClick(e){
       if (gameOver || dragging || isAdvancing) return;
+
+      // Start background music on first interaction
+      startBackgroundMusic();
 
       // If we're in the game-over sequence and waiting for tap, any board tap triggers death
       if (inGameOverSequence && waitingForDeathTap){
