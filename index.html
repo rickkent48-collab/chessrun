@@ -1756,6 +1756,67 @@
       }
       return false;
     }
+
+    // --------------------- Board hardening for maximum difficulty ---------------------
+    // Helper: derive protected (must-remain-safe) squares from a BFS path
+    function pathToProtectedSquares(path){
+      const s = new Set();
+      if (!path) return s;
+      for (const step of path){ s.add(keyOf(step.r, step.c)); }
+      // include the starting square
+      s.add(keyOf(player.row, player.col));
+      return s;
+    }
+
+    // Try placing a strong black piece at (r,c) to increase attacks, reverting if path breaks
+    function tryPlaceMaxThreatAt(r, c, protectedSquares){
+      if (!isEmpty(r,c)) return false;
+      // Bias toward queens/rooks (60%), then bishops/knights (30%), pawns rarely (10%)
+      const candidates = ['q','r','q','r','b','n','q','r','b','n','p'];
+      shuffle(candidates);
+      for (const t of candidates){
+        placePiece(r, c, { color: BLACK, type: t });
+        const res = bfsSafePath(board, player.type);
+        if (res && res.path && res.path.length){
+          // Ensure the protected path remains intact
+          const ps = pathToProtectedSquares(res.path);
+          const ok = Array.from(protectedSquares).every(k => ps.has(k));
+          if (ok){ return true; }
+        }
+        // revert and try another piece type
+        placePiece(r, c, null);
+      }
+      return false;
+    }
+
+    // Maximise attack coverage outside the protected path, preserving solvable path
+    function maximizeThreatCoverage(protectedSquares){
+      // Iterate over all non-protected squares in random order
+      const cells = [];
+      for (let r = 0; r < BOARD_ROWS; r++){
+        for (let c = 0; c < BOARD_COLS; c++){
+          const k = keyOf(r,c);
+          if (protectedSquares.has(k)) continue;
+          cells.push({r,c});
+        }
+      }
+      shuffle(cells);
+      for (const {r,c} of cells){
+        tryPlaceMaxThreatAt(r, c, protectedSquares);
+      }
+    }
+
+    // Hook into segment generation: after a valid path is found, harden the board
+    const _origGeneratePuzzleSegment = generatePuzzleSegment;
+    generatePuzzleSegment = function(){
+      _origGeneratePuzzleSegment();
+      // Harden regardless of stage to keep difficulty maximal on every board
+      const res = bfsSafePath(board, player.type);
+      if (res && res.path && res.path.length){
+        const protectedSquares = pathToProtectedSquares(res.path);
+        maximizeThreatCoverage(protectedSquares);
+      }
+    };
   </script>
 </body>
         </html>
