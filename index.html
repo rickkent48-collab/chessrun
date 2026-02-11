@@ -343,7 +343,12 @@
 
     // If legacy <audio id="bgMusic"> exists, ensure it never plays alongside Web Audio
     const legacyBgm = document.getElementById('bgMusic');
-    if (legacyBgm){ try{ legacyBgm.pause(); legacyBgm.muted = true; }catch(e){} }
+    if (legacyBgm) {
+      try {
+        legacyBgm.pause();
+        legacyBgm.muted = true;
+      } catch(e) {}
+    }
 
     async function ensureAudioContext(){
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -386,7 +391,7 @@
       musicSource.buffer = buffer;
       musicSource.loop = true; // gapless loop over decoded buffer
       const gain = audioCtx.createGain();
-      gain.gain.value = 1.0; // full volume (no slider now); can adjust if needed
+      gain.gain.value = 1.0; // full volume
       musicSource.connect(gain);
       gain.connect(audioCtx.destination);
       try { musicSource.start(0); } catch(e){}
@@ -577,15 +582,8 @@
         updateToggleText();
         if (musicEnabled) {
           await startMusic();
-          if (legacyBgm) { legacyBgm.muted = true; }
         } else {
           stopMusic();
-          if (legacyBgm) {
-            try {
-              legacyBgm.pause();
-              legacyBgm.currentTime = 0;
-            } catch(e) {}
-          }
         }
       }
       musicToggleBtn?.addEventListener("click", async function(e){
