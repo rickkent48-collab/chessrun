@@ -212,7 +212,7 @@
       --sheet-radius: 18px;
     }
     
-    .stats{ position:fixed; inset:0; display:none; z-index:75; }
+    .stats{ position:fixed; inset:0; display:none; z-index:75; border: var(--accent-w) solid var(--gold); border-top: none; border-radius: 0 0 var(--sheet-radius) var(--sheet-radius); box-sizing: border-box; }
     .stats.show{ display:block; }
     .stats-backdrop{ position:fixed; top:0; left:0; right:0; height:50vh; background: transparent; }
     .stats-sheet{
@@ -351,7 +351,7 @@
   <div id="resetConfirm" class="confirm-overlay" role="dialog" aria-modal="true" aria-labelledby="resetConfirmTitle">
     <div class="confirm-backdrop" aria-hidden="true"></div>
     <div class="confirm-card">
-      <div id="resetConfirmTitle" class="go-white" style="font-weight:800; font-size: clamp(18px, 5vw, 22px); text-align:center;">Are you sure you want to reset all stats?</div>
+      <div id="resetConfirmTitle" class="stat-white" style="font-weight:800; font-size: clamp(18px, 5vw, 22px); text-align:center;">Are you sure you want to reset all stats?</div>
       <div class="go-item-blank">&nbsp;</div>
       <button id="confirmResetBtn" class="play-btn" type="button">Reset Stats</button>
       <button id="cancelResetBtn" class="play-btn" type="button">Cancel</button>
