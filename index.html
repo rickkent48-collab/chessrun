@@ -147,6 +147,8 @@
     .go-item-value{ font-size: clamp(18px, 5vw, 22px); font-weight: 800; }
     /* White text utility for specific GO items */
     .go-white{ color:#FFFFFF; }
+    /* Ensure confirm title uses the exact Stats white (#FFFFFF) */
+    .confirm-title{ color:#FFFFFF !important; }
     /* Blank line spacing under High Score number */
     .go-item-blank{ font-size: clamp(18px, 5vw, 22px); line-height:1; }
 
@@ -212,14 +214,14 @@
       --sheet-radius: 18px;
     }
     
-    .stats{ position:fixed; inset:0; display:none; z-index:75; }
+    .stats{ position:fixed; inset:0; display:none; z-index:75; border: var(--accent-w) solid var(--gold); border-radius: var(--sheet-radius); box-sizing: border-box; }
     .stats.show{ display:block; }
-    .stats-backdrop{ position:fixed; top:0; left:0; right:0; height:50vh; background: transparent; }
+    .stats-backdrop{ position:fixed; top:0; left:0; right:0; height:50vh; background: transparent; border-radius: var(--sheet-radius); }
     .stats-sheet{
       position:fixed; left:0; right:0; bottom:0; height:58vh; background:#000; color: var(--text);
-      border-top-left-radius: var(--sheet-radius); border-top-right-radius: var(--sheet-radius);
-      border: var(--accent-w) solid var(--gold); /* move gold accent to outer edge */
-      border-bottom: none; /* keep bottom edge without gold line */
+      border-radius: var(--sheet-radius);
+      border: var(--accent-w) solid var(--gold); /* full gold outline with rounded corners */
+      box-sizing: border-box;
     }
     /* Remove inner border; keep content spacing */
     .stats-inner{
@@ -351,7 +353,7 @@
   <div id="resetConfirm" class="confirm-overlay" role="dialog" aria-modal="true" aria-labelledby="resetConfirmTitle">
     <div class="confirm-backdrop" aria-hidden="true"></div>
     <div class="confirm-card">
-      <div id="resetConfirmTitle" class="go-white" style="font-weight:800; font-size: clamp(18px, 5vw, 22px); text-align:center;">Are you sure you want to reset all stats?</div>
+      <div id="resetConfirmTitle" class="go-white confirm-title" style="font-weight:800; font-size: clamp(18px, 5vw, 22px); text-align:center;">Are you sure you want to reset all stats?</div>
       <div class="go-item-blank">&nbsp;</div>
       <button id="confirmResetBtn" class="play-btn" type="button">Reset Stats</button>
       <button id="cancelResetBtn" class="play-btn" type="button">Cancel</button>
