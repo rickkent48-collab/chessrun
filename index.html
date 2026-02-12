@@ -247,17 +247,9 @@
     /* Row color utilities */
     .stat-white{ color: #FFFFFF; }
     .stat-gold{  color: var(--gold); }
-
-    /* Confirmation overlay centered with interactive card that looks like Game Over card */
-    .confirm-overlay{ position:fixed; inset:0; display:none; z-index:80; align-items:center; justify-content:center; }
-    .confirm-overlay.show{ display:flex; }
-    .confirm-backdrop{ position:absolute; inset:0; background: rgba(0, 0, 0, 0.5); }
-    .confirm-card{
-      background:#000000; border-radius: 18px; color: var(--gold);
-      border: 4px solid var(--gold); box-sizing: border-box;
-      padding: 16px 20px; display:flex; flex-direction:column; align-items:center; justify-content:center;
-      gap: 10px; pointer-events:auto; font-family:"Boogaloo", system-ui;
-    }
+    
+    /* Force the reset confirmation text to pure white (same as Stats white) */
+    #resetConfirmText{ color:#FFFFFF !important; }
   </style>
 </head>
 <body>
@@ -289,6 +281,7 @@
       <img id="menuTitle" class="menu-logo" src="data:image/png;base64,PASTE BASE64 STRING HERE" alt="Chess Run logo" />
       <button id="playBtn" class="play-btn" type="button">Start</button>
       <button id="statsBtn" class="play-btn" type="button">Stats</button>
+      <button id="resetStatsMenuBtn" class="play-btn" type="button">Reset Stats</button>
       <button id="settingsBtn" class="play-btn" type="button">Settings</button>
     </div>
   </div>
@@ -350,13 +343,27 @@
     <div id="goCard" class="go-card" aria-hidden="true"></div>
   </div>
 
-  <div id="resetConfirm" class="confirm-overlay" role="dialog" aria-modal="true" aria-labelledby="resetConfirmTitle">
-    <div class="confirm-backdrop" aria-hidden="true"></div>
-    <div class="confirm-card">
-      <div id="resetConfirmTitle" class="go-white confirm-title" style="font-weight:800; font-size: clamp(18px, 5vw, 22px); text-align:center;">Are you sure you want to reset all stats?</div>
-      <div class="go-item-blank">&nbsp;</div>
-      <button id="confirmResetBtn" class="play-btn" type="button">Reset Stats</button>
-      <button id="cancelResetBtn" class="play-btn" type="button">Cancel</button>
+  <div id="resetConfirm" class="stats" role="dialog" aria-modal="true" aria-labelledby="resetTitle">
+    <div id="resetBackdrop" class="stats-backdrop" aria-hidden="true"></div>
+    <div id="resetSheet" class="stats-sheet">
+      <div class="stats-inner">
+        <div id="resetTitle" class="stats-title">Reset Stats</div>
+        <div class="stats-spacer"></div>
+        <div class="stats-list">
+          <div class="stat-row" style="justify-content:center;">
+            <span class="stat-white" id="resetConfirmText">Are you sure you want to reset all stats?</span>
+          </div>
+          <div class="stat-blank">&nbsp;</div>
+          <div class="stat-row" style="justify-content:center;">
+            <button id="confirmResetBtn" class="play-btn" type="button">Reset Stats</button>
+          </div>
+          <div class="stat-blank">&nbsp;</div>
+          <div class="stat-row" style="justify-content:center;">
+            <button id="cancelResetBtn" class="play-btn" type="button">Cancel</button>
+          </div>
+        </div>
+        <div class="stats-spacer"></div>
+      </div>
     </div>
   </div>
 
@@ -519,10 +526,15 @@
   function showResetConfirm(){ document.getElementById('resetConfirm').classList.add('show'); }
   function hideResetConfirm(){ document.getElementById('resetConfirm').classList.remove('show'); }
 
-  // Settings screen: open the confirm when tapping Reset Stats
+  // Open reset confirmation from menu and settings
+  document.getElementById('resetStatsMenuBtn')?.addEventListener('click', showResetConfirm);
   document.getElementById('resetStatsBtn')?.addEventListener('click', showResetConfirm);
+  
+  // Close via backdrop or Cancel
+  document.getElementById('resetBackdrop')?.addEventListener('click', hideResetConfirm);
   document.getElementById('cancelResetBtn')?.addEventListener('click', hideResetConfirm);
-  document.getElementById('resetConfirm')?.addEventListener('click', hideResetConfirm);
+  
+  // Perform stats reset (localStorage only)
   document.getElementById('confirmResetBtn')?.addEventListener('click', function(){
     // Clear stats keys; do not affect gameplay or other settings
     localStorage.removeItem('chessrun-total-games');
@@ -533,8 +545,8 @@
     hideResetConfirm();
   });
 
-  // Prevent backdrop click from closing when clicking inside the card
-  document.querySelector('.confirm-card')?.addEventListener('click', function(e){ e.stopPropagation(); });
+  // Prevent backdrop click from closing when clicking inside the sheet
+  document.getElementById('resetSheet')?.addEventListener('click', function(e){ e.stopPropagation(); });
   </script>
 
   <script>
