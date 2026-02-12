@@ -444,17 +444,24 @@
     setTimeout(()=>{ stopMusicImmediate(); }, durationMs + 20);
   }
 
-  // Unified gesture starter (attach to multiple events but guard for double start)
-  async function handleFirstGesture(){
-    if (gestureHandled) return;
-    gestureHandled = true;
-    await startMusicOnce();
+  // Start music on first user interaction anywhere (unless disabled)
+  function startOnFirstTap(){
+    try {
+      if (typeof musicEnabled !== 'undefined' && musicEnabled) {
+        // Ensure AudioContext is resumed and start once
+        ensureAudioContext().then(startMusicOnce).catch(()=>{});
+      }
+    } catch(e) {}
   }
 
-  // Wire gestures (pointerdown is earliest; click on Start may also fire)
-  document.getElementById('playBtn')?.addEventListener('click', handleFirstGesture);
-  window.addEventListener('pointerdown', handleFirstGesture, { once: true });
-  window.addEventListener('keydown', handleFirstGesture, { once: true });
+  // Capture-phase listeners catch interactions even if other handlers stop propagation
+  document.addEventListener('pointerdown', startOnFirstTap, { once: true, capture: true });
+  document.addEventListener('touchstart', startOnFirstTap, { once: true, capture: true });
+  document.addEventListener('mousedown', startOnFirstTap, { once: true, capture: true });
+  document.addEventListener('keydown', startOnFirstTap, { once: true, capture: true });
+
+  // Keep Start button shortcut (optional, harmless)
+  document.getElementById('playBtn')?.addEventListener('click', startOnFirstTap, { once: true });
 
   // Settings toggle integration (button exists from previous PR)
   const toggleBtn = document.getElementById('musicToggleBtn');
