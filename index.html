@@ -334,71 +334,154 @@
   </div>
 
   <script>
-    // Gapless looping background music using Web Audio
-    let audioCtx = null;
-    let musicBuffer = null;
-    let musicSource = null;
-    // Load music preference from localStorage or default to enabled
-    let musicEnabled = localStorage.getItem('chessrun-music-enabled') !== 'false';
+  // Robust gapless background music manager with debounced gesture start and fade envelopes
+  let audioCtx = null;
+  let bgmArrayBuffer = null;      // Prefetched raw audio bytes
+  let musicBuffer = null;         // Decoded AudioBuffer
+  let musicSource = null;         // Current BufferSource
+  let gainNode = null;            // Gain for fade in/out
+  let musicEnabled = localStorage.getItem('chessrun-music-enabled') !== 'false'; // Controlled by Settings toggle
+  let musicStarting = false;      // Debounce flag
+  let gestureHandled = false;     // Prevent double start from pointerdown + click
 
-    // If legacy <audio id="bgMusic"> exists, ensure it never plays alongside Web Audio
-    const legacyBgm = document.getElementById('bgMusic');
-    if (legacyBgm) {
-      try {
-        legacyBgm.pause();
-        legacyBgm.muted = true;
-      } catch(e) {}
+  // If legacy <audio id="bgm"> exists, ensure it never plays alongside Web Audio
+  (function disableLegacyBgm(){
+    const legacy = document.getElementById('bgm');
+    if (legacy){ try{ legacy.pause(); legacy.muted = true; }catch(e){} }
+  })();
+
+  // Prefetch the mp3 bytes as early as possible (no autoplay implications)
+  (function prefetchBgm(){
+    try {
+      fetch('CS1.mp3', { cache: 'force-cache' })
+        .then(r => r.arrayBuffer())
+        .then(arr => { bgmArrayBuffer = arr; })
+        .catch(()=>{});
+    } catch(e){}
+  })();
+
+  async function ensureAudioContext(){
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended'){
+      try { await audioCtx.resume(); } catch(e){}
     }
+    return audioCtx;
+  }
 
-    async function ensureAudioContext(){
-      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      if (audioCtx.state === 'suspended'){
-        try { await audioCtx.resume(); } catch(e){}
-      }
-      return audioCtx;
-    }
-
-    async function loadMusicBuffer(){
-      if (musicBuffer) return musicBuffer;
-      try {
-        await ensureAudioContext();
+  async function ensureDecodedBuffer(){
+    await ensureAudioContext();
+    if (musicBuffer) return musicBuffer;
+    // If prefetch didn't finish yet, fetch now
+    try {
+      if (!bgmArrayBuffer){
         const resp = await fetch('CS1.mp3', { cache: 'force-cache' });
-        if (!resp.ok) throw new Error('Failed to load music file');
-        const arr = await resp.arrayBuffer();
-        musicBuffer = await audioCtx.decodeAudioData(arr);
-        return musicBuffer;
-      } catch(e) {
-        console.warn('Music load failed:', e);
-        return null;
+        bgmArrayBuffer = await resp.arrayBuffer();
       }
-    }
+      musicBuffer = await audioCtx.decodeAudioData(bgmArrayBuffer); // decode prefetched buffer
+    } catch(e){ /* silently fail; will retry on next gesture */ }
+    return musicBuffer;
+  }
 
-    function stopMusic(){
-      if (musicSource){
-        try { musicSource.stop(0); } catch(e){}
-        try { musicSource.disconnect(); } catch(e){}
-        musicSource = null;
-      }
+  function disconnectSource(){
+    if (musicSource){
+      try { musicSource.disconnect(); } catch(e){}
+      musicSource = null;
     }
-
-    async function startMusic(){
-      if (!musicEnabled) return;
-      await ensureAudioContext();
-      const buffer = await loadMusicBuffer();
-      if (!buffer) return; // Failed to load music
-      stopMusic(); // ensure single instance
-      musicSource = audioCtx.createBufferSource();
-      musicSource.buffer = buffer;
-      musicSource.loop = true; // gapless loop over decoded buffer
-      const gain = audioCtx.createGain();
-      gain.gain.value = 1.0; // full volume
-      musicSource.connect(gain);
-      gain.connect(audioCtx.destination);
-      try { musicSource.start(0); } catch(e){}
+    if (gainNode){
+      try { gainNode.disconnect(); } catch(e){}
+      gainNode = null;
     }
+  }
 
-    // Gesture helpers: start music on first user interaction if enabled
-    function tryStartOnGesture(){ if (musicEnabled) startMusic(); }
+  function stopMusicImmediate(){
+    if (musicSource){
+      try { musicSource.stop(0); } catch(e){}
+    }
+    disconnectSource();
+  }
+
+  async function startMusicOnce(){
+    if (!musicEnabled) return;
+    if (musicStarting) return;    // debounce concurrent starts
+    musicStarting = true;
+    await ensureAudioContext();
+    await ensureDecodedBuffer();
+    if (!musicBuffer){ musicStarting = false; return; }
+
+    stopMusicImmediate(); // ensure single instance
+
+    // Build graph: source -> gain -> destination
+    musicSource = audioCtx.createBufferSource();
+    musicSource.buffer = musicBuffer;
+    musicSource.loop = true; // gapless loop
+    gainNode = audioCtx.createGain();
+    gainNode.gain.value = 0.0;     // start muted to avoid clicks
+    musicSource.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+
+    // Schedule a slight delay and fade-in to avoid crackle on start
+    const t0 = audioCtx.currentTime + 0.05; // 50ms scheduling offset
+    try { musicSource.start(t0); } catch(e){}
+    try {
+      gainNode.gain.cancelScheduledValues(0);
+      gainNode.gain.setValueAtTime(0.0, t0);
+      gainNode.gain.linearRampToValueAtTime(1.0, t0 + 0.35); // 350ms fade-in
+    } catch(e){}
+
+    // Clear debounce after fade-in completes (50ms offset + 350ms fade + margin)
+    setTimeout(()=>{ musicStarting = false; }, 500);
+  }
+
+  async function fadeOutAndStop(durationMs = 200){
+    if (!audioCtx || !gainNode || !musicSource) { stopMusicImmediate(); return; }
+    const t0 = audioCtx.currentTime;
+    try {
+      gainNode.gain.cancelScheduledValues(0);
+      gainNode.gain.setValueAtTime(gainNode.gain.value, t0);
+      gainNode.gain.linearRampToValueAtTime(0.0, t0 + (durationMs/1000));
+    } catch(e){}
+    // stop the source after fade completes
+    setTimeout(()=>{ stopMusicImmediate(); }, durationMs + 20);
+  }
+
+  // Unified gesture starter (attach to multiple events but guard for double start)
+  async function handleFirstGesture(){
+    if (gestureHandled) return;
+    gestureHandled = true;
+    await startMusicOnce();
+  }
+
+  // Wire gestures (pointerdown is earliest; click on Start may also fire)
+  document.getElementById('playBtn')?.addEventListener('click', handleFirstGesture);
+  window.addEventListener('pointerdown', handleFirstGesture, { once: true });
+  window.addEventListener('keydown', handleFirstGesture, { once: true });
+
+  // Settings toggle integration (button exists from previous PR)
+  const toggleBtn = document.getElementById('musicToggleBtn');
+  function updateToggleText(){ 
+    if (toggleBtn) {
+      toggleBtn.textContent = musicEnabled ? 'Music Enabled' : 'Music Disabled';
+      toggleBtn.setAttribute('aria-pressed', musicEnabled ? 'true' : 'false');
+    }
+  }
+  async function toggleMusic(){
+    musicEnabled = !musicEnabled;
+    localStorage.setItem('chessrun-music-enabled', String(musicEnabled));
+    updateToggleText();
+    if (musicEnabled){ await startMusicOnce(); }
+    else { await fadeOutAndStop(180); }
+  }
+  toggleBtn?.addEventListener('click', async (e) => {
+    e.stopPropagation(); // Prevent event bubbling to avoid closing the settings dialog
+    await ensureAudioContext();
+    await toggleMusic();
+  });
+
+  // Initialize toggle label
+  updateToggleText();
+  </script>
+
+  <script>
 
     const BOARD_ROWS = 11;
     const BOARD_COLS = 8;
@@ -569,37 +652,6 @@
       document.getElementById("settingsBackdrop").addEventListener("click", hideSettings);
       document.getElementById("settingsSheet").addEventListener("click", hideSettings);
 
-      // Music toggle button
-      const musicToggleBtn = document.getElementById("musicToggleBtn");
-      function updateToggleText(){
-        if (!musicToggleBtn) return;
-        musicToggleBtn.textContent = musicEnabled ? 'Music Enabled' : 'Music Disabled';
-        musicToggleBtn.setAttribute('aria-pressed', musicEnabled ? 'true' : 'false');
-      }
-      async function toggleMusic(){
-        musicEnabled = !musicEnabled;
-        localStorage.setItem('chessrun-music-enabled', String(musicEnabled));
-        updateToggleText();
-        if (musicEnabled) {
-          await startMusic();
-        } else {
-          stopMusic();
-        }
-      }
-      musicToggleBtn?.addEventListener("click", async function(e){
-        // Prevent event bubbling to avoid closing the settings dialog
-        e.stopPropagation();
-        // The toggle click is a user gesture; ensure audio context is resumed
-        await ensureAudioContext();
-        await toggleMusic();
-      });
-      updateToggleText();
-
-      // Gesture helpers for autoplay: start music on first user interaction if enabled
-      document.getElementById('playBtn')?.addEventListener('click', tryStartOnGesture);
-      window.addEventListener('pointerdown', tryStartOnGesture, { once: true });
-      window.addEventListener('keydown', tryStartOnGesture, { once: true });
-
       // Tap-to-move
       $board.addEventListener("click", onBoardClick);
 
@@ -627,7 +679,6 @@
     function showMenu(){ $menu.classList.add("show"); }
     function hideMenu(){ 
       $menu.classList.remove("show"); 
-      tryStartOnGesture();
     }
 
     // Board helpers
