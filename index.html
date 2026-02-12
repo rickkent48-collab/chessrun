@@ -540,6 +540,9 @@
   document.getElementById('resetStatsBackdrop')?.addEventListener('click', hideResetConfirm);
   document.getElementById('resetStatsSheet')?.addEventListener('click', hideResetConfirm);
 
+  // Prevent clicking inside the dialog from closing it
+  document.querySelector('#resetStats .stats-inner')?.addEventListener('click', function(e){ e.stopPropagation(); });
+
   // Confirm/Cancel actions
   document.getElementById('confirmResetBtn')?.addEventListener('click', function(){
     localStorage.removeItem('chessrun-total-games');
@@ -548,8 +551,8 @@
     localStorage.removeItem('chessrun-most-takes');
     localStorage.removeItem('chessrun-highscore');
     // Update stats view if open
-    if (document.getElementById('stats')?.classList.contains('show')){
-      if (typeof renderStats === 'function'){ renderStats(); }
+    if (document.getElementById('stats')?.classList.contains('show') && typeof renderStats === 'function'){
+      renderStats();
     }
     hideResetConfirm();
   });
