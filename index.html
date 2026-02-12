@@ -343,6 +343,7 @@
   let musicEnabled = localStorage.getItem('chessrun-music-enabled') !== 'false'; // Controlled by Settings toggle
   let musicStarting = false;      // Debounce flag
   let gestureHandled = false;     // Prevent double start from pointerdown + click
+  let musicStartupComplete = false; // Tracks successful startup; can be used for diagnostics or future enhancements
 
   // If legacy <audio id="bgm"> exists, ensure it never plays alongside Web Audio
   (function disableLegacyBgm(){
@@ -402,34 +403,35 @@
 
   async function startMusicOnce(){
     if (!musicEnabled) return;
-    if (musicStarting) return;    // debounce concurrent starts
+    // If a source already exists, assume it is (or will be) playing; do NOT restart/stop
+    if (musicSource) { return; }
+    if (musicStarting) { return; }
     musicStarting = true;
+
     await ensureAudioContext();
     await ensureDecodedBuffer();
     if (!musicBuffer){ musicStarting = false; return; }
 
-    stopMusicImmediate(); // ensure single instance
-
-    // Build graph: source -> gain -> destination
+    // Build graph without stopping any prior instance (there shouldn't be one)
     musicSource = audioCtx.createBufferSource();
     musicSource.buffer = musicBuffer;
-    musicSource.loop = true; // gapless loop
+    musicSource.loop = true; // keep gapless loop
     gainNode = audioCtx.createGain();
-    gainNode.gain.value = 0.0;     // start muted to avoid clicks
+    gainNode.gain.value = 0.0; // start muted; fade prevents clicks
     musicSource.connect(gainNode);
     gainNode.connect(audioCtx.destination);
 
-    // Schedule a slight delay and fade-in to avoid crackle on start
-    const t0 = audioCtx.currentTime + 0.05; // 50ms scheduling offset
+    // Slight schedule offset + fade-in to avoid crackle
+    const t0 = audioCtx.currentTime + 0.05;
     try { musicSource.start(t0); } catch(e){}
     try {
       gainNode.gain.cancelScheduledValues(0);
       gainNode.gain.setValueAtTime(0.0, t0);
-      gainNode.gain.linearRampToValueAtTime(1.0, t0 + 0.35); // 350ms fade-in
+      gainNode.gain.linearRampToValueAtTime(1.0, t0 + 0.35);
     } catch(e){}
 
-    // Clear debounce after fade-in completes (50ms offset + 350ms fade + margin)
-    setTimeout(()=>{ musicStarting = false; }, 500);
+    // Debounce window + mark startup complete
+    setTimeout(()=>{ musicStarting = false; musicStartupComplete = true; }, 800);
   }
 
   async function fadeOutAndStop(durationMs = 200){
@@ -447,20 +449,19 @@
   // Start music on first user interaction anywhere (unless disabled)
   function startOnFirstTap(){
     try {
-      if (typeof musicEnabled !== 'undefined' && musicEnabled) {
-        // Ensure AudioContext is resumed and start once
+      if (musicEnabled) {
         ensureAudioContext().then(startMusicOnce).catch(()=>{});
       }
     } catch(e) {}
   }
 
-  // Capture-phase listeners catch interactions even if other handlers stop propagation
+  // Capture-phase listeners ensure we catch the very first interaction
   document.addEventListener('pointerdown', startOnFirstTap, { once: true, capture: true });
   document.addEventListener('touchstart', startOnFirstTap, { once: true, capture: true });
   document.addEventListener('mousedown', startOnFirstTap, { once: true, capture: true });
   document.addEventListener('keydown', startOnFirstTap, { once: true, capture: true });
 
-  // Keep Start button shortcut (optional, harmless)
+  // Optional: keep Start button shortcut; guarded by once and idempotent start
   document.getElementById('playBtn')?.addEventListener('click', startOnFirstTap, { once: true });
 
   // Settings toggle integration (button exists from previous PR)
