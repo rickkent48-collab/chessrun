@@ -340,7 +340,7 @@
   let musicBuffer = null;         // Decoded AudioBuffer
   let musicSource = null;         // Current BufferSource
   let gainNode = null;            // Gain for fade in/out
-  let musicEnabled = true;        // Controlled by Settings toggle
+  let musicEnabled = localStorage.getItem('chessrun-music-enabled') !== 'false'; // Controlled by Settings toggle
   let musicStarting = false;      // Debounce flag
   let gestureHandled = false;     // Prevent double start from pointerdown + click
 
@@ -377,7 +377,7 @@
         const resp = await fetch('CS1.mp3', { cache: 'force-cache' });
         bgmArrayBuffer = await resp.arrayBuffer();
       }
-      musicBuffer = await audioCtx.decodeAudioData(bgmArrayBuffer.slice(0)); // copy buffer to be safe
+      musicBuffer = await audioCtx.decodeAudioData(bgmArrayBuffer); // decode prefetched buffer
     } catch(e){ /* silently fail; will retry on next gesture */ }
     return musicBuffer;
   }
@@ -428,7 +428,7 @@
       gainNode.gain.linearRampToValueAtTime(1.0, t0 + 0.35); // 350ms fade-in
     } catch(e){}
 
-    // Clear debounce after start scheduled
+    // Clear debounce after fade-in completes (50ms offset + 350ms fade + margin)
     setTimeout(()=>{ musicStarting = false; }, 500);
   }
 
@@ -458,14 +458,21 @@
 
   // Settings toggle integration (button exists from previous PR)
   const toggleBtn = document.getElementById('musicToggleBtn');
-  function updateToggleText(){ if (toggleBtn) toggleBtn.textContent = musicEnabled ? 'Music Enabled' : 'Music Disabled'; }
+  function updateToggleText(){ 
+    if (toggleBtn) {
+      toggleBtn.textContent = musicEnabled ? 'Music Enabled' : 'Music Disabled';
+      toggleBtn.setAttribute('aria-pressed', musicEnabled ? 'true' : 'false');
+    }
+  }
   async function toggleMusic(){
     musicEnabled = !musicEnabled;
+    localStorage.setItem('chessrun-music-enabled', String(musicEnabled));
     updateToggleText();
     if (musicEnabled){ await startMusicOnce(); }
     else { await fadeOutAndStop(180); }
   }
-  toggleBtn?.addEventListener('click', async () => {
+  toggleBtn?.addEventListener('click', async (e) => {
+    e.stopPropagation(); // Prevent event bubbling to avoid closing the settings dialog
     await ensureAudioContext();
     await toggleMusic();
   });
