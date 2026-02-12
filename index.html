@@ -343,7 +343,7 @@
   let musicEnabled = localStorage.getItem('chessrun-music-enabled') !== 'false'; // Controlled by Settings toggle
   let musicStarting = false;      // Debounce flag
   let gestureHandled = false;     // Prevent double start from pointerdown + click
-  let musicStartupComplete = false; // set true shortly after successful start
+  let musicStartupComplete = false; // Tracks successful startup; can be used for diagnostics or future enhancements
 
   // If legacy <audio id="bgm"> exists, ensure it never plays alongside Web Audio
   (function disableLegacyBgm(){
