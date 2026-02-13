@@ -2060,11 +2060,11 @@
       return span;
     }
 
-    // Pawn SVG; user (white) = rich royal gold, opposition (black) = rich bold blue; killer highlight = RED
+    // Pawn SVG; use currentColor to inherit theme colors; killer highlight = RED
     function pawnSVG(color, highlight=false){
       const isWhite = (color === WHITE);
-      // For white, use currentColor so it inherits from .white
-      const fill = isWhite ? "currentColor" : (highlight ? "#D32F2F" : "#1976D2");
+      // Use currentColor for all pawns so they inherit theme colors (gold/blue in Chess Run, white/black in Classic)
+      const fill = highlight ? "#D32F2F" : "currentColor";
       const stroke = "none"; // remove all pawn outlines
       return `
         <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
