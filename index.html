@@ -102,10 +102,10 @@
     .light{ background: var(--light); }
     .dark{  background: var(--dark); }
 
-    /* Piece visuals: user (white) rich royal gold, opponent (black) rich bold blue */
+    /* Piece visuals: default opposition colors (overridden for user pieces and themes) */
     .piece{ position:relative; z-index:2; font-family: "Boogaloo", system-ui; }
-    .white{ color:#1976D2; text-shadow:none; }  /* rich bold blue (slightly darker, still bright) - default for opposition */
-    .black{ color:#1976D2; text-shadow:none; }  /* rich bold blue (slightly darker, still bright) */
+    .white{ color:#1976D2; text-shadow:none; }  /* opposition default: rich bold blue */
+    .black{ color:#1976D2; text-shadow:none; }  /* opposition default: rich bold blue */
     /* Chess Run user piece: use updated gold with high specificity */
     body:not(.theme-classic) .piece.white{ color: var(--gold) !important; }
     .danger{ color: var(--danger) !important; } /* killer highlight is RED now */
@@ -640,7 +640,8 @@
       bodyEl.classList.remove('theme-classic');
     }
     // Update selected state (white background via CSS)
-    chessRunBtn?.classList.toggle('selected', theme !== 'classic');
+    // Chess Run is selected for 'chessrun' or any non-'classic' theme (default)
+    chessRunBtn?.classList.toggle('selected', theme === 'chessrun' || theme !== 'classic');
     classicBtn?.classList.toggle('selected', theme === 'classic');
   }
 
