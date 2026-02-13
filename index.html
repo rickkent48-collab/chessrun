@@ -108,8 +108,6 @@
     .black{ color:#1976D2; text-shadow:none; }  /* opposition default: rich bold blue */
     /* Chess Run user piece: use updated gold with high specificity */
     body:not(.theme-classic) .piece.white{ color: var(--gold) !important; }
-    /* Strengthen killer highlight so all killer pieces turn red */
-    .piece.danger{ color: var(--danger) !important; }
     .piece svg{ width:calc(var(--square-size) * 0.6); height:calc(var(--square-size) * 0.6); display:block; margin:auto; }
 
     /* Under-board controls */
@@ -285,6 +283,13 @@
     .theme-classic .piece.white{ color: var(--user-piece) !important; }  /* user white */
     .theme-classic .piece.black{ color: var(--opp-piece) !important; }  /* opposition black (fixes blue pawns) */
 
+    /* Place this AFTER the .piece.white/.piece.black variable-driven rules */
+    .piece.danger,
+    .piece.danger.white,
+    .piece.danger.black{
+      color: var(--danger) !important; /* force red for any highlighted killer piece */
+    }
+
     /* Classic theme Game Over card: white text, dark brown background, black outline */
     .theme-classic .go-card{
       background: var(--dark) !important; /* dark brown */
@@ -292,6 +297,12 @@
       color: #FFFFFF !important; /* all gold text becomes white */
     }
     .theme-classic .go-white{ color:#FFFFFF !important; }
+
+    /* In Classic theme, set High Score and Most Captures entries to canonical black */
+    .theme-classic .go-item-label.go-white,
+    .theme-classic .go-item-value.go-white{
+      color: var(--black) !important; /* #020102 */
+    }
 
     /* Confirmation overlay centered with interactive card that looks like Game Over card */
     .confirm-overlay{ position:fixed; inset:0; display:none; z-index:80; align-items:center; justify-content:center; }
