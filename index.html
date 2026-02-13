@@ -161,7 +161,7 @@
       color: #FFFFFF !important;                 /* replace gold text with white */
       border-color: #FFFFFF !important;          /* gold outline becomes white */
     }
-    .theme-classic .go-white{ color: var(--black) !important; } /* white items become black (#020102) */
+    .theme-classic .go-white{ color: var(--black) !important; } /* white items become black */
 
     /* Menu overlay: big diagonal squares, no inner lines (inherits black/white) */
     .menu{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:70; background: var(--black) !important; overflow:hidden; border: var(--accent-w) solid var(--gold); border-radius: var(--sheet-radius); box-sizing: border-box; }
@@ -628,19 +628,17 @@
   // Open/close Themes sheet
   function showThemes(){ document.getElementById('themes').classList.add('show'); }
   function hideThemes(){ document.getElementById('themes').classList.remove('show'); }
-  document.getElementById('themesBtn')?.addEventListener('click', showThemes);
-  // Themes popup: tapping backdrop or sheet area returns to Menu (buttons keep current behavior)
-  document.getElementById('themesBackdrop')?.addEventListener('click', function(){
+  function hideThemesAndShowMenu(){
     document.getElementById('themes')?.classList.remove('show');
     document.getElementById('menu')?.classList.add('show');
-  });
+  }
+  document.getElementById('themesBtn')?.addEventListener('click', showThemes);
+  // Themes popup: tapping backdrop or sheet area returns to Menu (buttons keep current behavior)
+  document.getElementById('themesBackdrop')?.addEventListener('click', hideThemesAndShowMenu);
 
   // Prevent clicking inside the dialog from closing it (must be registered before themesSheet click handler)
   document.querySelector('#themes .stats-inner')?.addEventListener('click', function(e){ e.stopPropagation(); });
-  document.getElementById('themesSheet')?.addEventListener('click', function(){
-    document.getElementById('themes')?.classList.remove('show');
-    document.getElementById('menu')?.classList.add('show');
-  });
+  document.getElementById('themesSheet')?.addEventListener('click', hideThemesAndShowMenu);
 
   // Theme management
   let currentTheme = localStorage.getItem('chessrun-theme') || 'chessrun'; // Load saved theme or default
