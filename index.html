@@ -248,6 +248,29 @@
     .stat-white{ color: #FFFFFF; }
     .stat-gold{  color: var(--gold); }
 
+    /* Red glow selection state for theme buttons (use existing danger red) */
+    #themes .play-btn.selected{ box-shadow: 0 0 0 3px var(--danger) inset, 0 0 10px var(--danger); }
+
+    /* Classic theme variables and scoped overrides */
+    .theme-classic{
+      /* Board colors */
+      --light: #E6D0A8; /* light brown */
+      --dark:  #7B5E3B; /* dark brown (not too dark) */
+    }
+    /* Above/below board backgrounds already use var(--dark), so they will match dark brown */
+
+    /* Scores (captures | score | high) pure white in Classic */
+    .theme-classic .captures,
+    .theme-classic .score,
+    .theme-classic .high{ color:#FFFFFF !important; }
+
+    /* In-game under-board controls: Menu and Restart buttons as light brown */
+    .theme-classic .controls button{ color:#E6D0A8 !important; }
+
+    /* Piece colors on the board: user white, opposition black; keep danger red */
+    .theme-classic .board .piece.white{ color:#FFFFFF !important; }
+    .theme-classic .board .piece.black{ color:#000000 !important; }
+
     /* Confirmation overlay centered with interactive card that looks like Game Over card */
     .confirm-overlay{ position:fixed; inset:0; display:none; z-index:80; align-items:center; justify-content:center; }
     .confirm-overlay.show{ display:flex; }
@@ -289,6 +312,7 @@
       <img id="menuTitle" class="menu-logo" src="data:image/png;base64,PASTE BASE64 STRING HERE" alt="Chess Run logo" />
       <button id="playBtn" class="play-btn" type="button">Start</button>
       <button id="statsBtn" class="play-btn" type="button">Stats</button>
+      <button id="themesBtn" class="play-btn" type="button">Themes</button>
       <button id="settingsBtn" class="play-btn" type="button">Settings</button>
     </div>
   </div>
@@ -367,6 +391,26 @@
           <div class="stat-blank">&nbsp;</div>
           <div class="stat-row" style="justify-content:center;">
             <button id="cancelResetBtn" class="play-btn" type="button">Cancel</button>
+          </div>
+        </div>
+        <div class="stats-spacer"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="themes" class="stats" role="dialog" aria-modal="true" aria-labelledby="themesTitle">
+    <div id="themesBackdrop" class="stats-backdrop" aria-hidden="true"></div>
+    <div id="themesSheet" class="stats-sheet">
+      <div class="stats-inner">
+        <div id="themesTitle" class="stats-title">Themes</div>
+        <div class="stats-spacer"></div>
+        <div class="stats-list">
+          <div class="stat-row" style="justify-content:center;">
+            <button id="themeChessRunBtn" class="play-btn" type="button">Chess Run</button>
+          </div>
+          <div class="stat-blank">&nbsp;</div>
+          <div class="stat-row" style="justify-content:center;">
+            <button id="themeClassicBtn" class="play-btn" type="button">Classic</button>
           </div>
         </div>
         <div class="stats-spacer"></div>
@@ -550,13 +594,53 @@
     localStorage.removeItem('chessrun-total-takes');
     localStorage.removeItem('chessrun-most-takes');
     localStorage.removeItem('chessrun-highscore');
-    // Update stats view if open
-    if (document.getElementById('stats')?.classList.contains('show') && typeof renderStats === 'function'){
-      renderStats();
-    }
     hideResetConfirm();
+    // If Stats sheet is open, re-render
+    if (document.getElementById('stats')?.classList.contains('show') && typeof renderStats === 'function') renderStats();
+    // Return to Settings as requested
+    document.getElementById('settings')?.classList.add('show');
   });
-  document.getElementById('cancelResetBtn')?.addEventListener('click', hideResetConfirm);
+
+  // Cancel: hide confirm and return to Settings
+  document.getElementById('cancelResetBtn')?.addEventListener('click', function(){
+    hideResetConfirm();
+    document.getElementById('settings')?.classList.add('show');
+  });
+
+  // Open/close Themes sheet
+  function showThemes(){ document.getElementById('themes').classList.add('show'); }
+  function hideThemes(){ document.getElementById('themes').classList.remove('show'); }
+  document.getElementById('themesBtn')?.addEventListener('click', showThemes);
+  document.getElementById('themesBackdrop')?.addEventListener('click', hideThemes);
+
+  // Prevent clicking inside the dialog from closing it (must be registered before themesSheet click handler)
+  document.querySelector('#themes .stats-inner')?.addEventListener('click', function(e){ e.stopPropagation(); });
+  document.getElementById('themesSheet')?.addEventListener('click', hideThemes);
+
+  // Theme management
+  let currentTheme = localStorage.getItem('chessrun-theme') || 'chessrun'; // Load saved theme or default
+  const bodyEl = document.body;
+  const chessRunBtn = document.getElementById('themeChessRunBtn');
+  const classicBtn  = document.getElementById('themeClassicBtn');
+
+  function applyTheme(theme){
+    currentTheme = theme;
+    localStorage.setItem('chessrun-theme', theme); // Persist theme preference
+    if (theme === 'classic'){
+      bodyEl.classList.add('theme-classic');
+    } else {
+      bodyEl.classList.remove('theme-classic');
+    }
+    // Update selection glow
+    chessRunBtn?.classList.toggle('selected', theme === 'chessrun');
+    classicBtn?.classList.toggle('selected', theme === 'classic');
+  }
+
+  chessRunBtn?.addEventListener('click', function(){ applyTheme('chessrun'); });
+  classicBtn?.addEventListener('click', function(){ applyTheme('classic'); });
+
+  // Initialize selection state from saved preference
+  applyTheme(currentTheme);
   </script>
 
   <script>
