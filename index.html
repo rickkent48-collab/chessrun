@@ -23,6 +23,10 @@
 
       /* Slow, smooth scroll duration for advancing */
       --advance-duration: 2400ms;
+
+      /* Piece color variables used by default (Chess Run theme) */
+      --user-piece: var(--gold);
+      --opp-piece:  #1976D2; /* Chess Run opponent color; overridden in Classic */
     }
 
     html,body{
@@ -104,11 +108,13 @@
 
     /* Piece visuals: default opposition colors (overridden for user pieces and themes) */
     .piece{ position:relative; z-index:2; font-family: "Boogaloo", system-ui; }
-    .white{ color:#1976D2; text-shadow:none; }  /* opposition default: rich bold blue */
-    .black{ color:#1976D2; text-shadow:none; }  /* opposition default: rich bold blue */
-    /* Chess Run user piece: use updated gold with high specificity */
-    body:not(.theme-classic) .piece.white{ color: var(--gold) !important; }
-    .danger{ color: var(--danger) !important; } /* killer highlight is RED now */
+    
+    /* Default (Chess Run) piece colors via variables (prevents color flash on new rows) */
+    .piece.white{ color: var(--user-piece) !important; text-shadow:none; }
+    .piece.black{ color: var(--opp-piece) !important; text-shadow:none; }
+
+    /* Danger (game-ending) opposition piece always red, regardless of theme */
+    .piece.black.danger{ color: var(--danger) !important; }
     .piece svg{ width:calc(var(--square-size) * 0.6); height:calc(var(--square-size) * 0.6); display:block; margin:auto; }
 
     /* Under-board controls */
@@ -155,8 +161,11 @@
     /* Blank line spacing under High Score number */
     .go-item-blank{ font-size: clamp(18px, 5vw, 22px); line-height:1; }
 
+    /* When menu is shown, force page background to pure black to fill outermost tips */
+    body.menu-open{ background: var(--black) !important; }
+
     /* Menu overlay: big diagonal squares, no inner lines (inherits black/white) */
-    .menu{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:70; background: var(--black); border: var(--accent-w) solid var(--gold); border-radius: var(--sheet-radius); box-sizing: border-box; }
+    .menu{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:70; background: var(--black) !important; border: var(--accent-w) solid var(--gold); border-radius: var(--sheet-radius); box-sizing: border-box; }
     .menu.show{ display:flex; align-items:flex-start; justify-content:center; }
     .menu::before{
       content:"";
@@ -264,6 +273,9 @@
       /* Board colors */
       --light: #E6D0A8; /* light brown */
       --dark:  #7B5E3B; /* dark brown (not too dark) */
+      /* Piece colors */
+      --user-piece: #FFFFFF;       /* user is white */
+      --opp-piece:  var(--black);  /* opponent is pure black */
     }
     /* Above/below board backgrounds already use var(--dark), so they will match dark brown */
 
@@ -275,9 +287,18 @@
     /* In-game under-board controls: Menu and Restart buttons as light brown */
     .theme-classic .controls button{ color:#E6D0A8 !important; }
 
-    /* Classic theme board visuals (broad selectors to catch rolling pieces too) */
-    .theme-classic .piece.white{ color:#FFFFFF !important; }  /* user white */
-    .theme-classic .piece.black{ color:#000000 !important; }  /* opposition black (fixes blue pawns) */
+    /* Ensure animated/rolling rows also receive correct colors immediately */
+    .theme-classic .piece.white{ color:#FFFFFF !important; }
+    .theme-classic .piece.black{ color:var(--black) !important; }
+    .theme-classic .piece.black.danger{ color: var(--danger) !important; }
+
+    /* Classic Game Over pop color swaps */
+    .theme-classic .go-card{
+      background: var(--light) !important;     /* black areas -> light brown */
+      border-color: var(--black) !important;   /* gold outline -> black */
+      color: var(--dark) !important;           /* gold text -> dark brown */
+    }
+    .theme-classic .go-card .go-white{ color: var(--black) !important; } /* white text -> black */
 
     /* Confirmation overlay centered with interactive card that looks like Game Over card */
     .confirm-overlay{ position:fixed; inset:0; display:none; z-index:80; align-items:center; justify-content:center; }
@@ -618,12 +639,26 @@
   // Open/close Themes sheet
   function showThemes(){ document.getElementById('themes').classList.add('show'); }
   function hideThemes(){ document.getElementById('themes').classList.remove('show'); }
+  function returnToMenu(){ hideThemes(); showMenu(); }
+  
   document.getElementById('themesBtn')?.addEventListener('click', showThemes);
-  document.getElementById('themesBackdrop')?.addEventListener('click', hideThemes);
-
-  // Prevent clicking inside the dialog from closing it (must be registered before themesSheet click handler)
-  document.querySelector('#themes .stats-inner')?.addEventListener('click', function(e){ e.stopPropagation(); });
-  document.getElementById('themesSheet')?.addEventListener('click', hideThemes);
+  
+  // Backdrop click returns to menu
+  document.getElementById('themesBackdrop')?.addEventListener('click', returnToMenu);
+  
+  // Sheet click returns to menu unless a button was clicked
+  document.getElementById('themesSheet')?.addEventListener('click', function(e){
+    if (!(e.target instanceof HTMLElement)) return;
+    if (e.target.tagName.toLowerCase() === 'button') return; // buttons handled separately
+    returnToMenu();
+  });
+  
+  // Prevent clicking inside the stats-inner from bubbling to sheet
+  document.querySelector('#themes .stats-inner')?.addEventListener('click', function(e){ 
+    if (!(e.target instanceof HTMLElement)) return;
+    if (e.target.tagName.toLowerCase() === 'button') return; // allow buttons to work
+    e.stopPropagation(); 
+  });
 
   // Theme management
   let currentTheme = localStorage.getItem('chessrun-theme') || 'chessrun'; // Load saved theme or default
@@ -645,8 +680,8 @@
     classicBtn?.classList.toggle('selected', theme === 'classic');
   }
 
-  chessRunBtn?.addEventListener('click', function(){ applyTheme('chessrun'); });
-  classicBtn?.addEventListener('click', function(){ applyTheme('classic'); });
+  chessRunBtn?.addEventListener('click', function(e){ e.stopPropagation(); applyTheme('chessrun'); });
+  classicBtn?.addEventListener('click', function(e){ e.stopPropagation(); applyTheme('classic'); });
 
   // Initialize selection state from saved preference
   applyTheme(currentTheme);
@@ -847,8 +882,12 @@
     }
 
     // Menu helpers
-    function showMenu(){ $menu.classList.add("show"); }
+    function showMenu(){ 
+      document.body.classList.add('menu-open'); 
+      $menu.classList.add("show"); 
+    }
     function hideMenu(){ 
+      document.body.classList.remove('menu-open');
       $menu.classList.remove("show"); 
     }
 
