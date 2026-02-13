@@ -108,7 +108,8 @@
     .black{ color:#1976D2; text-shadow:none; }  /* opposition default: rich bold blue */
     /* Chess Run user piece: use updated gold with high specificity */
     body:not(.theme-classic) .piece.white{ color: var(--gold) !important; }
-    .danger{ color: var(--danger) !important; } /* killer highlight is RED now */
+    /* Strengthen killer highlight so all killer pieces turn red */
+    .piece.danger{ color: var(--danger) !important; }
     .piece svg{ width:calc(var(--square-size) * 0.6); height:calc(var(--square-size) * 0.6); display:block; margin:auto; }
 
     /* Under-board controls */
@@ -164,6 +165,8 @@
       background: var(--black) !important;
       border-radius: inherit;
     }
+    /* While menu is open, ensure page corners are also black (body for viewport corners, wrap for content area) */
+    .menu-open, .menu-open .wrap{ background: var(--black) !important; }
     .menu-content{
       position:relative; z-index:1;
       display:flex; flex-direction:column; align-items:center; justify-content:flex-start;
@@ -264,6 +267,9 @@
       /* Board colors */
       --light: #E6D0A8; /* light brown */
       --dark:  #7B5E3B; /* dark brown (not too dark) */
+      /* Piece colors as variables to prevent flash during roll-down animation */
+      --user-piece: #FFFFFF;     /* user white */
+      --opp-piece:  var(--black);/* opponent black */
     }
     /* Above/below board backgrounds already use var(--dark), so they will match dark brown */
 
@@ -275,9 +281,17 @@
     /* In-game under-board controls: Menu and Restart buttons as light brown */
     .theme-classic .controls button{ color:#E6D0A8 !important; }
 
-    /* Classic theme board visuals (broad selectors to catch rolling pieces too) */
-    .theme-classic .piece.white{ color:#FFFFFF !important; }  /* user white */
-    .theme-classic .piece.black{ color:#000000 !important; }  /* opposition black (fixes blue pawns) */
+    /* Classic theme board visuals (using variables prevents flash during roll-down) */
+    .theme-classic .piece.white{ color: var(--user-piece) !important; }  /* user white */
+    .theme-classic .piece.black{ color: var(--opp-piece) !important; }  /* opposition black (fixes blue pawns) */
+
+    /* Classic theme Game Over card: white text, dark brown background, black outline */
+    .theme-classic .go-card{
+      background: var(--dark) !important; /* dark brown */
+      border-color: var(--black) !important; /* outline becomes canonical black */
+      color: #FFFFFF !important; /* all gold text becomes white */
+    }
+    .theme-classic .go-white{ color:#FFFFFF !important; }
 
     /* Confirmation overlay centered with interactive card that looks like Game Over card */
     .confirm-overlay{ position:fixed; inset:0; display:none; z-index:80; align-items:center; justify-content:center; }
@@ -619,11 +633,14 @@
   function showThemes(){ document.getElementById('themes').classList.add('show'); }
   function hideThemes(){ document.getElementById('themes').classList.remove('show'); }
   document.getElementById('themesBtn')?.addEventListener('click', showThemes);
-  document.getElementById('themesBackdrop')?.addEventListener('click', hideThemes);
+  
+  // Themes: tapping backdrop or sheet returns to menu (except button taps)
+  const returnToMenu = () => { hideThemes(); showMenu(); };
+  document.getElementById('themesBackdrop')?.addEventListener('click', returnToMenu);
+  document.getElementById('themesSheet')?.addEventListener('click', returnToMenu);
 
-  // Prevent clicking inside the dialog from closing it (must be registered before themesSheet click handler)
-  document.querySelector('#themes .stats-inner')?.addEventListener('click', function(e){ e.stopPropagation(); });
-  document.getElementById('themesSheet')?.addEventListener('click', hideThemes);
+  // Prevent theme selection buttons from propagating clicks to sheet
+  document.querySelectorAll('#themes .play-btn').forEach(btn => btn.addEventListener('click', e => e.stopPropagation()));
 
   // Theme management
   let currentTheme = localStorage.getItem('chessrun-theme') || 'chessrun'; // Load saved theme or default
@@ -847,9 +864,13 @@
     }
 
     // Menu helpers
-    function showMenu(){ $menu.classList.add("show"); }
+    function showMenu(){ 
+      $menu.classList.add("show");
+      document.body.classList.add('menu-open');
+    }
     function hideMenu(){ 
-      $menu.classList.remove("show"); 
+      $menu.classList.remove("show");
+      document.body.classList.remove('menu-open');
     }
 
     // Board helpers
