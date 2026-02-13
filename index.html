@@ -350,13 +350,27 @@
     <div id="goCard" class="go-card" aria-hidden="true"></div>
   </div>
 
-  <div id="resetConfirm" class="confirm-overlay" role="dialog" aria-modal="true" aria-labelledby="resetConfirmTitle">
-    <div class="confirm-backdrop" aria-hidden="true"></div>
-    <div class="confirm-card">
-      <div id="resetConfirmTitle" class="go-white confirm-title" style="font-weight:800; font-size: clamp(18px, 5vw, 22px); text-align:center;">Are you sure you want to reset all stats?</div>
-      <div class="go-item-blank">&nbsp;</div>
-      <button id="confirmResetBtn" class="play-btn" type="button">Reset Stats</button>
-      <button id="cancelResetBtn" class="play-btn" type="button">Cancel</button>
+  <div id="resetStats" class="stats" role="dialog" aria-modal="true" aria-labelledby="resetStatsTitle">
+    <div id="resetStatsBackdrop" class="stats-backdrop" aria-hidden="true"></div>
+    <div id="resetStatsSheet" class="stats-sheet">
+      <div class="stats-inner">
+        <div id="resetStatsTitle" class="stats-title">Reset Stats</div>
+        <div class="stats-spacer"></div>
+        <div class="stats-list">
+          <div class="stat-row stat-white" style="justify-content:center;">
+            <span>Are you sure you want to reset all stats?</span>
+          </div>
+          <div class="stat-blank">&nbsp;</div>
+          <div class="stat-row" style="justify-content:center;">
+            <button id="confirmResetBtn" class="play-btn" type="button">Reset Stats</button>
+          </div>
+          <div class="stat-blank">&nbsp;</div>
+          <div class="stat-row" style="justify-content:center;">
+            <button id="cancelResetBtn" class="play-btn" type="button">Cancel</button>
+          </div>
+        </div>
+        <div class="stats-spacer"></div>
+      </div>
     </div>
   </div>
 
@@ -516,25 +530,33 @@
   updateToggleText();
 
   // Reset Stats confirmation dialog
-  function showResetConfirm(){ document.getElementById('resetConfirm').classList.add('show'); }
-  function hideResetConfirm(){ document.getElementById('resetConfirm').classList.remove('show'); }
+  function showResetConfirm(){ document.getElementById('resetStats').classList.add('show'); }
+  function hideResetConfirm(){ document.getElementById('resetStats').classList.remove('show'); }
 
-  // Settings screen: open the confirm when tapping Reset Stats
+  // Open confirmation from Settings button
   document.getElementById('resetStatsBtn')?.addEventListener('click', showResetConfirm);
-  document.getElementById('cancelResetBtn')?.addEventListener('click', hideResetConfirm);
-  document.getElementById('resetConfirm')?.addEventListener('click', hideResetConfirm);
+
+  // Close like other sheets
+  document.getElementById('resetStatsBackdrop')?.addEventListener('click', hideResetConfirm);
+  document.getElementById('resetStatsSheet')?.addEventListener('click', hideResetConfirm);
+
+  // Prevent clicking inside the dialog from closing it
+  document.querySelector('#resetStats .stats-inner')?.addEventListener('click', function(e){ e.stopPropagation(); });
+
+  // Confirm/Cancel actions
   document.getElementById('confirmResetBtn')?.addEventListener('click', function(){
-    // Clear stats keys; do not affect gameplay or other settings
     localStorage.removeItem('chessrun-total-games');
     localStorage.removeItem('chessrun-total-score');
     localStorage.removeItem('chessrun-total-takes');
     localStorage.removeItem('chessrun-most-takes');
     localStorage.removeItem('chessrun-highscore');
+    // Update stats view if open
+    if (document.getElementById('stats')?.classList.contains('show') && typeof renderStats === 'function'){
+      renderStats();
+    }
     hideResetConfirm();
   });
-
-  // Prevent backdrop click from closing when clicking inside the card
-  document.querySelector('.confirm-card')?.addEventListener('click', function(e){ e.stopPropagation(); });
+  document.getElementById('cancelResetBtn')?.addEventListener('click', hideResetConfirm);
   </script>
 
   <script>
