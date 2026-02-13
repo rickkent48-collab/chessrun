@@ -8,12 +8,12 @@
   <link href="https://fonts.googleapis.com/css2?family=Boogaloo&display=swap" rel="stylesheet">
   <style>
     :root{
-      --gold: #FFD700; /* bolder, unified gold used everywhere */
+      --gold: #EFBF04; /* bolder, unified gold used everywhere */
       --board-cols: 8;
       --board-rows: 11;
       --square-size: calc(100vw / var(--board-cols));
       --light: #ffffff;  /* board light squares: white */
-      --dark:  #000000;  /* board dark squares: black */
+      --dark:  #020102;  /* board dark squares: black */
       --text:  var(--gold);
       --danger: #D32F2F; /* killer highlight is RED now */
 
@@ -25,7 +25,7 @@
     }
 
     html,body{
-      margin:0; padding:0; background:var(--dark); color:var(--text);
+      margin:0; padding:0; background:#020102; color:var(--text);
       font-family: "Boogaloo", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
       touch-action: none;
     }
@@ -101,10 +101,10 @@
     .light{ background: var(--light); }
     .dark{  background: var(--dark); }
 
-    /* Piece visuals: user (white) rich royal gold, opponent (black) rich bold blue */
+    /* Piece visuals: user (white) uses gold, opponent (black) uses black */
     .piece{ position:relative; z-index:2; font-family: "Boogaloo", system-ui; }
-    .white{ color:#D4AF37; text-shadow:none; }  /* royal gold (slightly darker, still bright) */
-    .black{ color:#1976D2; text-shadow:none; }  /* rich bold blue (slightly darker, still bright) */
+    .white{ color:var(--gold); text-shadow:none; }  /* user piece in gold */
+    .black{ color:#020102; text-shadow:none; }  /* opposition piece in black */
     .danger{ color: var(--danger) !important; } /* killer highlight is RED now */
     .piece svg{ width:calc(var(--square-size) * 0.6); height:calc(var(--square-size) * 0.6); display:block; margin:auto; }
 
@@ -131,7 +131,7 @@
     /* Game Over card over the board */
     .go-card{
       position: fixed; /* positioned via JS relative to board */
-      background: #000000; /* black */
+      background: #020102; /* black */
       border-radius: 18px;
       color: var(--gold); /* gold text */
       box-sizing: border-box;
@@ -153,12 +153,12 @@
     .go-item-blank{ font-size: clamp(18px, 5vw, 22px); line-height:1; }
 
     /* Menu overlay: big diagonal squares, no inner lines (inherits black/white) */
-    .menu{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:70; border: var(--accent-w) solid var(--gold); border-radius: var(--sheet-radius); box-sizing: border-box; }
+    .menu{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:70; border: var(--accent-w) solid var(--gold); border-radius: var(--sheet-radius); box-sizing: border-box; background:#020102; }
     .menu.show{ display:flex; align-items:flex-start; justify-content:center; }
     .menu::before{
       content:"";
       position:absolute; inset:0;
-      background: #000000;
+      background: #020102;
       border-radius: var(--sheet-radius);
     }
     .menu-content{
@@ -218,7 +218,7 @@
     .stats.show{ display:block; }
     .stats-backdrop{ position:fixed; top:0; left:0; right:0; height:50vh; background: transparent; border-radius: var(--sheet-radius); }
     .stats-sheet{
-      position:fixed; left:0; right:0; bottom:0; height:58vh; background:#000; color: var(--text);
+      position:fixed; left:0; right:0; bottom:0; height:58vh; background:#020102; color: var(--text);
       border-radius: var(--sheet-radius);
       border: var(--accent-w) solid var(--gold); /* full gold outline with rounded corners */
       box-sizing: border-box;
@@ -248,8 +248,9 @@
     .stat-white{ color: #FFFFFF; }
     .stat-gold{  color: var(--gold); }
 
-    /* Red glow selection state for theme buttons (use existing danger red) */
-    #themes .play-btn.selected{ box-shadow: 0 0 0 3px var(--danger) inset, 0 0 10px var(--danger); }
+    /* Theme button selection: no glow, selected shows white text, non-selected shows gold */
+    #themes .play-btn.selected{ box-shadow: none; color:#FFFFFF; }
+    #themes .play-btn:not(.selected){ color: var(--gold); }
 
     /* Classic theme variables and scoped overrides */
     .theme-classic{
@@ -269,14 +270,28 @@
 
     /* Piece colors on the board: user white, opposition black; keep danger red */
     .theme-classic .board .piece.white{ color:#FFFFFF !important; }
-    .theme-classic .board .piece.black{ color:#000000 !important; }
+    .theme-classic .board .piece.black{ color:#020102 !important; }
+
+    /* SVG fills for Chess Run theme (default) */
+    .piece.white svg path{ fill: var(--gold) !important; }
+    .piece.black svg path{ fill: #020102 !important; }
+
+    /* SVG fills for Classic theme */
+    .theme-classic .piece.white svg path{ fill: #FFFFFF !important; }
+    .theme-classic .piece.black svg path{ fill: #020102 !important; }
+
+    /* Classic theme colors during board roll animation (strip-scroller) */
+    .theme-classic .strip-scroller .piece.white{ color:#FFFFFF !important; }
+    .theme-classic .strip-scroller .piece.black{ color:#020102 !important; }
+    .theme-classic .strip-scroller .piece.white svg path{ fill:#FFFFFF !important; }
+    .theme-classic .strip-scroller .piece.black svg path{ fill:#020102 !important; }
 
     /* Confirmation overlay centered with interactive card that looks like Game Over card */
     .confirm-overlay{ position:fixed; inset:0; display:none; z-index:80; align-items:center; justify-content:center; }
     .confirm-overlay.show{ display:flex; }
     .confirm-backdrop{ position:absolute; inset:0; background: rgba(0, 0, 0, 0.5); }
     .confirm-card{
-      background:#000000; border-radius: 18px; color: var(--gold);
+      background:#020102; border-radius: 18px; color: var(--gold);
       border: 4px solid var(--gold); box-sizing: border-box;
       padding: 16px 20px; display:flex; flex-direction:column; align-items:center; justify-content:center;
       gap: 10px; pointer-events:auto; font-family:"Boogaloo", system-ui;
