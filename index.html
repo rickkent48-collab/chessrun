@@ -165,7 +165,7 @@
       background: var(--black) !important;
       border-radius: inherit;
     }
-    /* While menu is open, ensure page corners are also black */
+    /* While menu is open, ensure page corners are also black (body for viewport corners, wrap for content area) */
     .menu-open, .menu-open .wrap{ background: var(--black) !important; }
     .menu-content{
       position:relative; z-index:1;
@@ -635,10 +635,11 @@
   document.getElementById('themesBtn')?.addEventListener('click', showThemes);
   
   // Themes: tapping backdrop or sheet returns to menu (except button taps)
-  document.getElementById('themesBackdrop')?.addEventListener('click', function(){ hideThemes(); showMenu(); });
-  document.getElementById('themesSheet')?.addEventListener('click', function(){ hideThemes(); showMenu(); });
+  const returnToMenu = () => { hideThemes(); showMenu(); };
+  document.getElementById('themesBackdrop')?.addEventListener('click', returnToMenu);
+  document.getElementById('themesSheet')?.addEventListener('click', returnToMenu);
 
-  // Prevent clicking inside the dialog buttons from closing it
+  // Prevent theme selection buttons from propagating clicks to sheet
   document.querySelectorAll('#themes .play-btn').forEach(btn => btn.addEventListener('click', e => e.stopPropagation()));
 
   // Theme management
