@@ -363,14 +363,9 @@
       --danger: #FF1744; /* neon red for killer highlight in Neon theme */
     }
 
-    /* Ensure user/opposition pieces use theme variables (covers text symbols and pawn currentColor) */
-    .piece.white{ color: var(--user-piece) !important; }
-    .piece.black{ color: var(--opp-piece) !important; }
-
-    /* Killer highlight overrides theme colors for ALL killer pieces */
-    .piece.danger,
-    .piece.danger.white,
-    .piece.danger.black{ color: var(--danger) !important; }
+    /* Ensure user/opposition pieces use theme variables in Neon (covers text symbols and pawn currentColor) */
+    .theme-neon .piece.white{ color: var(--user-piece) !important; }
+    .theme-neon .piece.black{ color: var(--opp-piece) !important; }
 
     /* Neon Game Over pop-up: outline + Score/Captures rows use bold neon orange */
     .theme-neon .go-card{ border-color: #FF6A00 !important; /* neon orange outline */ }
