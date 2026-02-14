@@ -298,11 +298,45 @@
     }
     .theme-classic .go-white{ color:#FFFFFF !important; }
 
-    /* In Classic theme, set High Score and Most Captures entries to canonical black */
+    /* In Classic theme, set High Score and Most Captures entries to light brown (Classic light square color) */
     .theme-classic .go-item-label.go-white,
     .theme-classic .go-item-value.go-white{
-      color: var(--black) !important; /* #020102 */
+      color: var(--light) !important; /* Classic light brown */
     }
+
+    /* Neon theme variables and scoped overrides */
+    .theme-neon{
+      /* Board colors */
+      --light: #00E5FF;  /* neon blue (light square) */
+      --dark:  #8A00FF;  /* neon purple (dark square & background) */
+      /* Piece colors as variables to prevent flash during roll-down animation */
+      --user-piece: #39FF14;  /* neon green user piece */
+      --opp-piece:  #FF0DB5;  /* neon pink opposition pieces */
+    }
+
+    /* HUD scores neon green in Neon */
+    .theme-neon .captures,
+    .theme-neon .score,
+    .theme-neon .high{ color:#39FF14 !important; }
+
+    /* Under-board controls text buttons neon blue in Neon */
+    .theme-neon .controls button{ color:#00E5FF !important; }
+
+    /* Neon theme board visuals (using variables prevents flash during roll-down) */
+    .theme-neon .piece.white{ color: var(--user-piece) !important; }  /* user neon green */
+    .theme-neon .piece.black{ color: var(--opp-piece) !important; }  /* opposition neon pink */
+
+    /* GO pop-up in Neon */
+    .theme-neon .go-card{
+      border-color: #39FF14 !important; /* neon green outline */
+      background:   #00E5FF !important; /* neon blue background */
+    }
+    /* Default GO labels/values neon green in Neon */
+    .theme-neon .go-item-label,
+    .theme-neon .go-item-value{ color:#39FF14 !important; }
+    /* High Score & Most Captures rows neon purple in Neon (marked by go-white) */
+    .theme-neon .go-item-label.go-white,
+    .theme-neon .go-item-value.go-white{ color:#8A00FF !important; }
 
     /* Confirmation overlay centered with interactive card that looks like Game Over card */
     .confirm-overlay{ position:fixed; inset:0; display:none; z-index:80; align-items:center; justify-content:center; }
@@ -444,6 +478,10 @@
           <div class="stat-blank">&nbsp;</div>
           <div class="stat-row" style="justify-content:center;">
             <button id="themeClassicBtn" class="play-btn" type="button">Classic</button>
+          </div>
+          <div class="stat-blank">&nbsp;</div>
+          <div class="stat-row" style="justify-content:center;">
+            <button id="themeNeonBtn" class="play-btn" type="button">Neon</button>
           </div>
         </div>
         <div class="stats-spacer"></div>
@@ -658,23 +696,28 @@
   const bodyEl = document.body;
   const chessRunBtn = document.getElementById('themeChessRunBtn');
   const classicBtn  = document.getElementById('themeClassicBtn');
+  const neonBtn     = document.getElementById('themeNeonBtn');
 
   function applyTheme(theme){
     currentTheme = theme;
     localStorage.setItem('chessrun-theme', theme); // Persist theme preference
+    // Remove all theme classes
+    bodyEl.classList.remove('theme-classic', 'theme-neon');
+    // Apply the selected theme class
     if (theme === 'classic'){
       bodyEl.classList.add('theme-classic');
-    } else {
-      bodyEl.classList.remove('theme-classic');
+    } else if (theme === 'neon'){
+      bodyEl.classList.add('theme-neon');
     }
-    // Update selected state (white background via CSS)
-    // Chess Run is selected for 'chessrun' or any non-'classic' theme (default)
-    chessRunBtn?.classList.toggle('selected', theme === 'chessrun' || theme !== 'classic');
+    // Update selected state (white background via CSS .selected)
+    chessRunBtn?.classList.toggle('selected', theme === 'chessrun');
     classicBtn?.classList.toggle('selected', theme === 'classic');
+    neonBtn?.classList.toggle('selected', theme === 'neon');
   }
 
   chessRunBtn?.addEventListener('click', function(){ applyTheme('chessrun'); });
   classicBtn?.addEventListener('click', function(){ applyTheme('classic'); });
+  neonBtn?.addEventListener('click', function(){ applyTheme('neon'); });
 
   // Initialize selection state from saved preference
   applyTheme(currentTheme);
