@@ -313,7 +313,7 @@
       --dark:  #8A00FF;   /* neon purple (dark square & background) */
 
       /* Slightly darker, bold neon green for scores and user piece */
-      --user-piece: #15D100; /* user piece (matches neon green scores) */
+      --user-piece: #13C200; /* darker neon green (replaces prior lighter neon) */
 
       /* Opposition bold neon orange */
       --opp-piece:  #FF6A00;
@@ -325,14 +325,19 @@
     /* Neon HUD scores use the same darker neon green */
     .theme-neon .captures,
     .theme-neon .score,
-    .theme-neon .high{ color: var(--user-piece) !important; }
+    .theme-neon .high{ color:#13C200 !important; }
 
     /* Under-board controls text buttons neon blue in Neon */
     .theme-neon .controls button{ color: var(--light) !important; }
 
     /* Neon board square glow */
-    .theme-neon .sq.light{ box-shadow: 0 0 10px var(--light); }
-    .theme-neon .sq.dark { box-shadow: 0 0 10px var(--dark); }
+    .theme-neon .sq.light{ box-shadow: 0 0 10px #00E5FF; }
+    .theme-neon .sq.dark { box-shadow: 0 0 10px #8A00FF; }
+    /* Intensify glow on top and bottom board rows */
+    .theme-neon .board .sq:nth-child(-n+8).light,
+    .theme-neon .board .sq:nth-last-child(-n+8).light{ box-shadow: 0 0 16px #00E5FF, 0 0 28px rgba(0,229,255,0.5); }
+    .theme-neon .board .sq:nth-child(-n+8).dark,
+    .theme-neon .board .sq:nth-last-child(-n+8).dark { box-shadow: 0 0 16px #8A00FF, 0 0 28px rgba(138,0,255,0.5); }
 
     /* Ensure Neon user/opposition piece colors win and killer highlight overrides theme colors */
     .theme-neon .piece.white{ color: var(--user-piece) !important; }
@@ -350,6 +355,27 @@
     /* High Score & Most Captures rows neon purple in Neon (marked by go-white) */
     .theme-neon .go-item-label.go-white,
     .theme-neon .go-item-value.go-white{ color:#8A00FF !important; }
+
+    /* Ocean theme: medium/dark blue squares, medium blue background, light blue opposition, white user & scores, light blue controls */
+    .theme-ocean{
+      --light: #3399FF;  /* medium blue (light squares) */
+      --dark:  #0B3D91;  /* dark blue (dark squares) */
+      --user-piece: #FFFFFF; /* user white */
+      --opp-piece:  #66CCFF; /* opposition light blue */
+    }
+    /* Background above/below board should be medium blue */
+    .theme-ocean html, .theme-ocean body, .theme-ocean .wrap, .theme-ocean .board-shell{ background: #3399FF !important; }
+    /* Scores white in Ocean */
+    .theme-ocean .captures,
+    .theme-ocean .score,
+    .theme-ocean .high{ color:#FFFFFF !important; }
+    /* Under-board controls text buttons light blue */
+    .theme-ocean .controls button{ color:#66CCFF !important; }
+    /* Ensure Ocean user/opposition piece colors */
+    .theme-ocean .piece.white{ color: var(--user-piece) !important; }
+    .theme-ocean .piece.black{ color: var(--opp-piece) !important; }
+    /* Killer highlight stays standard red via var(--danger) */
+    .theme-ocean .piece.danger{ color: var(--danger) !important; }
 
     /* Confirmation overlay centered with interactive card that looks like Game Over card */
     .confirm-overlay{ position:fixed; inset:0; display:none; z-index:80; align-items:center; justify-content:center; }
@@ -495,6 +521,10 @@
           <div class="stat-blank">&nbsp;</div>
           <div class="stat-row" style="justify-content:center;">
             <button id="themeNeonBtn" class="play-btn" type="button">Neon</button>
+          </div>
+          <div class="stat-blank">&nbsp;</div>
+          <div class="stat-row" style="justify-content:center;">
+            <button id="themeOceanBtn" class="play-btn" type="button">Ocean</button>
           </div>
         </div>
         <div class="stats-spacer"></div>
@@ -710,27 +740,32 @@
   const chessRunBtn = document.getElementById('themeChessRunBtn');
   const classicBtn  = document.getElementById('themeClassicBtn');
   const neonBtn     = document.getElementById('themeNeonBtn');
+  const oceanBtn    = document.getElementById('themeOceanBtn');
 
   function applyTheme(theme){
     currentTheme = theme;
     localStorage.setItem('chessrun-theme', theme); // Persist theme preference
     // Remove all theme classes
-    bodyEl.classList.remove('theme-classic', 'theme-neon');
+    bodyEl.classList.remove('theme-classic', 'theme-neon', 'theme-ocean');
     // Apply the selected theme class
     if (theme === 'classic'){
       bodyEl.classList.add('theme-classic');
     } else if (theme === 'neon'){
       bodyEl.classList.add('theme-neon');
+    } else if (theme === 'ocean'){
+      bodyEl.classList.add('theme-ocean');
     }
     // Update selected state (white background via CSS .selected)
     chessRunBtn?.classList.toggle('selected', theme === 'chessrun');
     classicBtn?.classList.toggle('selected', theme === 'classic');
     neonBtn?.classList.toggle('selected', theme === 'neon');
+    oceanBtn?.classList.toggle('selected', theme === 'ocean');
   }
 
   chessRunBtn?.addEventListener('click', function(){ applyTheme('chessrun'); });
   classicBtn?.addEventListener('click', function(){ applyTheme('classic'); });
   neonBtn?.addEventListener('click', function(){ applyTheme('neon'); });
+  oceanBtn?.addEventListener('click', function(){ applyTheme('ocean'); });
 
   // Initialize selection state from saved preference
   applyTheme(currentTheme);
