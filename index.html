@@ -331,7 +331,6 @@
     .theme-neon .controls button{ color: var(--light) !important; }
 
     /* Neon squares glow from all sides; include inset glow to simulate background glow onto squares */
-    .theme-neon .sq{ position:relative; }
     .theme-neon .sq.light{
       box-shadow:
         0 0 10px 4px #00E5FF,   /* outer neon blue glow */
@@ -379,9 +378,9 @@
     /* Scores white in Ocean */
     .theme-ocean .captures,
     .theme-ocean .score,
-    .theme-ocean .high{ color:#FFFFFF !important; }
+    .theme-ocean .high{ color: var(--user-piece) !important; }
     /* Under-board controls text buttons light blue in Ocean */
-    .theme-ocean .controls button{ color:#66CCFF !important; }
+    .theme-ocean .controls button{ color: var(--opp-piece) !important; }
     /* Apply piece colors (text symbols and pawn currentColor) */
     .theme-ocean .piece.white{ color: var(--user-piece) !important; }
     .theme-ocean .piece.black{ color: var(--opp-piece) !important; }
