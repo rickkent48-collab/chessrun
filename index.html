@@ -348,6 +348,32 @@
       padding: 16px 20px; display:flex; flex-direction:column; align-items:center; justify-content:center;
       gap: 10px; pointer-events:auto; font-family:"Boogaloo", system-ui;
     }
+
+    /* Neon theme refined palette and UI overrides */
+    .theme-neon{
+      /* Board squares and base background */
+      --light: #00E5FF;    /* neon blue (light square) */
+      --dark:  #8A00FF;    /* neon purple (dark square & screen background) */
+
+      /* Piece colors (slightly darker, bold neon green for user; bold neon orange for opposition) */
+      --user-piece: #1EFF00; /* bold neon green user piece (slightly darker than before) */
+      --opp-piece:  #FF6A00; /* bold neon orange opposition pieces */
+
+      /* Danger highlight (neon red) */
+      --danger: #FF1744; /* neon red for killer highlight in Neon theme */
+    }
+
+    /* Ensure user/opposition pieces use theme variables in Neon (covers text symbols and pawn currentColor) */
+    .theme-neon .piece.white{ color: var(--user-piece) !important; }
+    .theme-neon .piece.black{ color: var(--opp-piece) !important; }
+
+    /* Neon Game Over pop-up: outline + Score/Captures rows use bold neon orange */
+    .theme-neon .go-card{ border-color: #FF6A00 !important; /* neon orange outline */ }
+    .theme-neon .go-item-label,
+    .theme-neon .go-item-value{ color:#FF6A00 !important; } /* Score & Captures rows neon orange */
+    /* Keep High Score & Most Captures rows neon purple (these rows are marked go-white) */
+    .theme-neon .go-item-label.go-white,
+    .theme-neon .go-item-value.go-white{ color:#8A00FF !important; }
   </style>
 </head>
 <body>
