@@ -106,8 +106,8 @@
     .piece{ position:relative; z-index:2; font-family: "Boogaloo", system-ui; }
     .white{ color:#1976D2; text-shadow:none; }  /* opposition default: rich bold blue */
     .black{ color:#1976D2; text-shadow:none; }  /* opposition default: rich bold blue */
-    /* Chess Run user piece: use updated gold with high specificity */
-    body:not(.theme-classic) .piece.white{ color: var(--gold) !important; }
+    /* Chess Run user piece: use updated gold with high specificity (exclude Neon which has its own colors) */
+    body:not(.theme-classic):not(.theme-neon) .piece.white{ color: var(--gold) !important; }
     .piece svg{ width:calc(var(--square-size) * 0.6); height:calc(var(--square-size) * 0.6); display:block; margin:auto; }
 
     /* Under-board controls */
@@ -374,6 +374,26 @@
     /* Keep High Score & Most Captures rows neon purple (these rows are marked go-white) */
     .theme-neon .go-item-label.go-white,
     .theme-neon .go-item-value.go-white{ color:#8A00FF !important; }
+
+    /* Neon theme refined colors and glow */
+    .theme-neon{
+      /* Ensure Neon theme pieces use the intended colors */
+      --user-piece: #1EFF00; /* bold bright neon green */
+      --opp-piece:  #FF6A00; /* bold neon orange opposition */
+      --danger:     #FF1744; /* neon red for killer highlight */
+    }
+    /* Strong specificity so Neon overrides any non-Classic gold rules */
+    .theme-neon .piece.white{ color: var(--user-piece) !important; }
+    .theme-neon .piece.black{ color: var(--opp-piece) !important; }
+    .theme-neon .piece.danger{ color: var(--danger) !important; }
+    /* Glow around all Neon theme pieces (applies to text symbols and pawn SVG via currentColor) */
+    .theme-neon .piece{
+      text-shadow: 0 0 6px currentColor, 0 0 12px currentColor;
+      filter: drop-shadow(0 0 4px currentColor) drop-shadow(0 0 10px currentColor);
+    }
+
+    /* Chess Run (default) opposition pieces: set to #006CFF */
+    body:not(.theme-classic):not(.theme-neon) .piece.black{ color:#006CFF !important; }
   </style>
 </head>
 <body>
@@ -2164,10 +2184,8 @@
 
     // Pawn SVG; use currentColor to inherit theme colors; killer highlight = RED
     function pawnSVG(color, highlight=false){
-      const isWhite = (color === WHITE);
-      // Use currentColor for all pawns so they inherit theme colors (gold/blue in Chess Run, white/black in Classic)
-      const fill = highlight ? "#D32F2F" : "currentColor";
-      const stroke = "none"; // remove all pawn outlines
+      const stroke = "none";
+      const fill = "currentColor"; // killer color comes from .piece.danger via CSS
       return `
         <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
           <circle cx="50" cy="24" r="14" fill="${fill}" stroke="${stroke}" stroke-width="0"/>
