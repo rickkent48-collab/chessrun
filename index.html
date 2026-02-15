@@ -17,6 +17,7 @@
       --dark:  var(--black);  /* board dark squares: black */
       --text:  var(--gold);
       --danger: #D32F2F; /* killer highlight is RED now */
+      --opp-piece: #006CFF; /* Chess Run opposition pieces standard color */
 
       --above-gap: 10px;
       --below-gap: calc(var(--above-gap) * 2);
@@ -357,15 +358,34 @@
 
       /* Piece colors (slightly darker, bold neon green for user; bold neon orange for opposition) */
       --user-piece: #1EFF00; /* bold neon green user piece (slightly darker than before) */
+      --score-green: #1EFF00; /* bold neon green scores */
       --opp-piece:  #FF6A00; /* bold neon orange opposition pieces */
 
       /* Danger highlight (neon red) */
       --danger: #FF1744; /* neon red for killer highlight in Neon theme */
     }
 
+    /* Neon theme scores in HUD */
+    .theme-neon .captures,
+    .theme-neon .score,
+    .theme-neon .high{ color: var(--score-green) !important; }
+
     /* Ensure user/opposition pieces use theme variables in Neon (covers text symbols and pawn currentColor) */
     .theme-neon .piece.white{ color: var(--user-piece) !important; }
     .theme-neon .piece.black{ color: var(--opp-piece) !important; }
+
+    /* Ensure killer highlight applies to ALL opposition pieces in Neon theme */
+    .theme-neon .piece.danger,
+    .theme-neon .piece.danger.white,
+    .theme-neon .piece.danger.black{ color: var(--danger) !important; }
+
+    /* Neon theme square glow */
+    .theme-neon .sq.light{
+      box-shadow: 0 0 10px rgba(0,229,255,0.6), inset 0 0 6px rgba(0,229,255,0.5);
+    }
+    .theme-neon .sq.dark{
+      box-shadow: 0 0 10px rgba(138,0,255,0.6), inset 0 0 6px rgba(138,0,255,0.5);
+    }
 
     /* Neon Game Over pop-up: outline + Score/Captures rows use bold neon orange */
     .theme-neon .go-card{ border-color: #FF6A00 !important; /* neon orange outline */ }
@@ -2162,23 +2182,14 @@
       return span;
     }
 
-    // Pawn SVG; use currentColor to inherit theme colors; killer highlight = RED
+    // Pawn SVG; use currentColor to inherit theme colors; killer highlight comes from .piece.danger
     function pawnSVG(color, highlight=false){
-      const isWhite = (color === WHITE);
-      // Use currentColor for all pawns so they inherit theme colors (gold/blue in Chess Run, white/black in Classic)
-      const fill = highlight ? "#D32F2F" : "currentColor";
-      const stroke = "none"; // remove all pawn outlines
+      const stroke = "none";
+      const fill = "currentColor"; // killer highlight comes from .piece.danger (neon red)
       return `
         <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
           <circle cx="50" cy="24" r="14" fill="${fill}" stroke="${stroke}" stroke-width="0"/>
-          <path d="M35 40
-                   C35 36, 65 36, 65 40
-                   C65 46, 60 52, 54 56
-                   C60 60, 62 66, 62 72
-                   L38 72
-                   C38 66, 40 60, 46 56
-                   C40 52, 35 46, 35 40Z"
-                fill="${fill}" stroke="${stroke}" stroke-width="0"/>
+          <path d="M35 40 C35 36, 65 36, 65 40 C65 46, 60 52, 54 56 C60 60, 62 66, 62 72 L38 72 C38 66, 40 60, 46 56 C40 52, 35 46, 35 40Z" fill="${fill}" stroke="${stroke}" stroke-width="0"/>
           <rect x="28" y="72" width="44" height="8" rx="2" ry="2" fill="${fill}" stroke="${stroke}" stroke-width="0"/>
           <rect x="22" y="80" width="56" height="8" rx="2" ry="2" fill="${fill}" stroke="${stroke}" stroke-width="0"/>
         </svg>
