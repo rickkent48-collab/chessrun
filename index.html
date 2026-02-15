@@ -325,14 +325,14 @@
     /* Neon HUD scores use the same darker neon green */
     .theme-neon .captures,
     .theme-neon .score,
-    .theme-neon .high{ color:#15D100 !important; }
+    .theme-neon .high{ color: var(--user-piece) !important; }
 
     /* Under-board controls text buttons neon blue in Neon */
-    .theme-neon .controls button{ color:#00E5FF !important; }
+    .theme-neon .controls button{ color: var(--light) !important; }
 
     /* Neon board square glow */
-    .theme-neon .sq.light{ box-shadow: 0 0 10px #00E5FF; }
-    .theme-neon .sq.dark { box-shadow: 0 0 10px #8A00FF; }
+    .theme-neon .sq.light{ box-shadow: 0 0 10px var(--light); }
+    .theme-neon .sq.dark { box-shadow: 0 0 10px var(--dark); }
 
     /* Ensure Neon user/opposition piece colors win and killer highlight overrides theme colors */
     .theme-neon .piece.white{ color: var(--user-piece) !important; }
