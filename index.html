@@ -106,8 +106,8 @@
     .piece{ position:relative; z-index:2; font-family: "Boogaloo", system-ui; }
     .white{ color:#1976D2; text-shadow:none; }  /* opposition default: rich bold blue */
     .black{ color:#1976D2; text-shadow:none; }  /* opposition default: rich bold blue */
-    /* Chess Run user piece: use updated gold with high specificity */
-    body:not(.theme-classic) .piece.white{ color: var(--gold) !important; }
+    /* Chess Run user piece: use updated gold with high specificity (exclude Neon which has its own colors) */
+    body:not(.theme-classic):not(.theme-neon) .piece.white{ color: var(--gold) !important; }
     .piece svg{ width:calc(var(--square-size) * 0.6); height:calc(var(--square-size) * 0.6); display:block; margin:auto; }
 
     /* Under-board controls */
