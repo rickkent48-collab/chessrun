@@ -330,9 +330,9 @@
     /* Under-board controls text buttons neon blue in Neon */
     .theme-neon .controls button{ color: var(--light) !important; }
 
-    /* Neon board square glow */
-    .theme-neon .sq.light{ box-shadow: 0 0 10px var(--light); }
-    .theme-neon .sq.dark { box-shadow: 0 0 10px var(--dark); }
+    /* Neon: remove all glow from squares */
+    .theme-neon .sq.light{ box-shadow: none !important; }
+    .theme-neon .sq.dark { box-shadow: none !important; }
 
     /* Ensure Neon user/opposition piece colors win and killer highlight overrides theme colors */
     .theme-neon .piece.white{ color: var(--user-piece) !important; }
@@ -341,15 +341,36 @@
 
     /* GO pop-up in Neon */
     .theme-neon .go-card{
-      border-color: #39FF14 !important; /* neon green outline */
+      border-color: #FF6A00 !important; /* neon orange outline */
       background:   #00E5FF !important; /* neon blue background */
     }
-    /* Default GO labels/values neon green in Neon */
+    /* Default GO labels/values neon orange in Neon */
     .theme-neon .go-item-label,
-    .theme-neon .go-item-value{ color:#39FF14 !important; }
+    .theme-neon .go-item-value{ color:#FF6A00 !important; }
     /* High Score & Most Captures rows neon purple in Neon (marked by go-white) */
     .theme-neon .go-item-label.go-white,
     .theme-neon .go-item-value.go-white{ color:#8A00FF !important; }
+
+    /* Ocean theme palette and scoped UI overrides */
+    .theme-ocean{
+      --light: #007FFF;  /* ocean light square */
+      --dark:  #00008B;  /* ocean dark square & background */
+      --user-piece: #FFFFFF; /* user piece white */
+      --opp-piece:  #00F0FF; /* opposition pieces */
+      /* Use existing danger red for killer highlight */
+    }
+
+    /* HUD scores white in Ocean */
+    .theme-ocean .captures,
+    .theme-ocean .score,
+    .theme-ocean .high{ color:#FFFFFF !important; }
+
+    /* Under-board controls text buttons ocean light blue */
+    .theme-ocean .controls button{ color:#007FFF !important; }
+
+    /* Ensure menu overlay corners remain pure black when Ocean is selected */
+    .theme-ocean .menu{ background: var(--black) !important; }
+    .theme-ocean .menu::before{ background: var(--black) !important; border-radius: inherit; }
 
     /* Confirmation overlay centered with interactive card that looks like Game Over card */
     .confirm-overlay{ position:fixed; inset:0; display:none; z-index:80; align-items:center; justify-content:center; }
@@ -491,6 +512,10 @@
           <div class="stat-blank">&nbsp;</div>
           <div class="stat-row" style="justify-content:center;">
             <button id="themeClassicBtn" class="play-btn" type="button">Classic</button>
+          </div>
+          <div class="stat-blank">&nbsp;</div>
+          <div class="stat-row" style="justify-content:center;">
+            <button id="themeOceanBtn" class="play-btn" type="button">Ocean</button>
           </div>
           <div class="stat-blank">&nbsp;</div>
           <div class="stat-row" style="justify-content:center;">
@@ -709,27 +734,32 @@
   const bodyEl = document.body;
   const chessRunBtn = document.getElementById('themeChessRunBtn');
   const classicBtn  = document.getElementById('themeClassicBtn');
+  const oceanBtn    = document.getElementById('themeOceanBtn');
   const neonBtn     = document.getElementById('themeNeonBtn');
 
   function applyTheme(theme){
     currentTheme = theme;
     localStorage.setItem('chessrun-theme', theme); // Persist theme preference
     // Remove all theme classes
-    bodyEl.classList.remove('theme-classic', 'theme-neon');
+    bodyEl.classList.remove('theme-classic', 'theme-ocean', 'theme-neon');
     // Apply the selected theme class
     if (theme === 'classic'){
       bodyEl.classList.add('theme-classic');
+    } else if (theme === 'ocean'){
+      bodyEl.classList.add('theme-ocean');
     } else if (theme === 'neon'){
       bodyEl.classList.add('theme-neon');
     }
     // Update selected state (white background via CSS .selected)
     chessRunBtn?.classList.toggle('selected', theme === 'chessrun');
     classicBtn?.classList.toggle('selected', theme === 'classic');
+    oceanBtn?.classList.toggle('selected', theme === 'ocean');
     neonBtn?.classList.toggle('selected', theme === 'neon');
   }
 
   chessRunBtn?.addEventListener('click', function(){ applyTheme('chessrun'); });
   classicBtn?.addEventListener('click', function(){ applyTheme('classic'); });
+  oceanBtn?.addEventListener('click', function(){ applyTheme('ocean'); });
   neonBtn?.addEventListener('click', function(){ applyTheme('neon'); });
 
   // Initialize selection state from saved preference
