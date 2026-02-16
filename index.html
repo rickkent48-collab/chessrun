@@ -312,8 +312,8 @@
       --light: #00E5FF;   /* neon blue (light square) */
       --dark:  #8A00FF;   /* neon purple (dark square & background) */
 
-      /* Slightly darker, bold neon green for scores and user piece */
-      --user-piece: #15D100; /* user piece (matches neon green scores) */
+      /* Neon yellow for scores and user piece */
+      --user-piece: #FFF01F; /* user piece (matches neon yellow scores) */
 
       /* Opposition bold neon orange */
       --opp-piece:  #FF6A00;
@@ -322,10 +322,10 @@
       --danger: #FF1744;
     }
 
-    /* Neon HUD scores use the same darker neon green */
+    /* Neon HUD scores use the same neon yellow */
     .theme-neon .captures,
     .theme-neon .score,
-    .theme-neon .high{ color: var(--user-piece) !important; }
+    .theme-neon .high{ color: #FFF01F !important; }
 
     /* Under-board controls text buttons neon blue in Neon */
     .theme-neon .controls button{ color: var(--light) !important; }
@@ -364,6 +364,18 @@
     .theme-ocean .captures,
     .theme-ocean .score,
     .theme-ocean .high{ color:#FFFFFF !important; }
+
+    /* Ocean GO pop-up styling */
+    .theme-ocean .go-card{
+      border-color: #FFFFFF !important; /* white outline */
+      background:   #007FFF !important; /* ocean blue background */
+    }
+    /* Score & Captures rows: white labels and values */
+    .theme-ocean .go-item-label,
+    .theme-ocean .go-item-value{ color:#FFFFFF !important; }
+    /* High Score & Most Captures rows specifically (marked go-white): dark navy */
+    .theme-ocean .go-item-label.go-white,
+    .theme-ocean .go-item-value.go-white{ color:#00008B !important; }
 
     /* Under-board controls text buttons ocean light blue */
     .theme-ocean .controls button{ color:#007FFF !important; }
@@ -507,11 +519,11 @@
         <div class="stats-spacer"></div>
         <div class="stats-list">
           <div class="stat-row" style="justify-content:center;">
-            <button id="themeChessRunBtn" class="play-btn" type="button">Chess Run</button>
+            <button id="themeChessRunBtn" class="play-btn" type="button">Classic</button>
           </div>
           <div class="stat-blank">&nbsp;</div>
           <div class="stat-row" style="justify-content:center;">
-            <button id="themeClassicBtn" class="play-btn" type="button">Classic</button>
+            <button id="themeClassicBtn" class="play-btn" type="button">Vintage</button>
           </div>
           <div class="stat-blank">&nbsp;</div>
           <div class="stat-row" style="justify-content:center;">
