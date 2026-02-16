@@ -394,6 +394,28 @@
       padding: 16px 20px; display:flex; flex-direction:column; align-items:center; justify-content:center;
       gap: 10px; pointer-events:auto; font-family:"Boogaloo", system-ui;
     }
+
+    /* Vintage theme: carved wood effect without changing base colors */
+    .theme-classic .piece{ /* Vintage is implemented by the class .theme-classic */
+      /* Embossed/engraved feel using neutral (black/white) shadows */
+      text-shadow:
+        0 -1px 0 rgba(255,255,255,0.25), /* subtle top highlight */
+        0  1px 0 rgba(0,0,0,0.30),        /* faint inner carve line */
+        0  2px 1px rgba(0,0,0,0.20);      /* soft depth under piece */
+      filter: brightness(0.99) contrast(1.03);
+    }
+
+    /* Pawn SVG: add strokes and subtle drop-shadows to simulate carved edges */
+    .theme-classic .piece svg{
+      filter: drop-shadow(0 -1px 0 rgba(255,255,255,0.20)) drop-shadow(0 2px 1px rgba(0,0,0,0.18));
+    }
+    .theme-classic .piece svg circle,
+    .theme-classic .piece svg path,
+    .theme-classic .piece svg rect{
+      stroke: rgba(0,0,0,0.25); /* neutral dark engrave stroke */
+      stroke-width: 1.2;
+      paint-order: stroke fill; /* stroke sits above fill */
+    }
   </style>
 </head>
 <body>
