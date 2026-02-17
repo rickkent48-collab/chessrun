@@ -799,6 +799,10 @@
     classicBtn?.classList.toggle('selected', theme === 'classic');
     oceanBtn?.classList.toggle('selected', theme === 'ocean');
     neonBtn?.classList.toggle('selected', theme === 'neon');
+    // Re-render board if game is in progress to apply theme-specific piece rendering
+    if (typeof renderBoard === 'function' && typeof board !== 'undefined' && board){
+      renderBoard();
+    }
   }
 
   chessRunBtn?.addEventListener('click', function(){ applyTheme('chessrun'); });
