@@ -384,6 +384,19 @@
     .theme-ocean .menu{ background: var(--black) !important; }
     .theme-ocean .menu::before{ background: var(--black) !important; border-radius: inherit; }
 
+    /* Ocean theme piece visual polish: subtle highlights and shadows */
+    .theme-ocean .piece svg{
+      /* Soft dual drop-shadow for depth */
+      filter: drop-shadow(0 -1px 0 rgba(255,255,255,0.25)) drop-shadow(0 2px 2px rgba(0,0,0,0.22));
+    }
+    .theme-ocean .piece svg path,
+    .theme-ocean .piece svg rect,
+    .theme-ocean .piece svg circle{
+      stroke: rgba(255,255,255,0.20); /* gentle highlight edge */
+      stroke-width: 1.2;
+      paint-order: stroke fill;
+    }
+
     /* Confirmation overlay centered with interactive card that looks like Game Over card */
     .confirm-overlay{ position:fixed; inset:0; display:none; z-index:80; align-items:center; justify-content:center; }
     .confirm-overlay.show{ display:flex; }
@@ -2195,15 +2208,49 @@
       $board.appendChild(frag);
     }
 
+    // Ocean theme water-themed SVG sprites for all piece types
+    function oceanPieceSVG(type){
+      // All SVGs use currentColor fill to inherit theme colors
+      const commonHead = '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">';
+      const commonTail = '</svg>';
+      const waveBase = '<path d="M10 78 C 25 68, 35 80, 50 72 C 65 64, 75 72, 90 62 L 90 90 L 10 90 Z" fill="currentColor"/>';
+
+      switch(type){
+        case 'P': case 'p': // Pawn = simple crest over wave base
+          return commonHead + '<path d="M30 34 C 38 22, 62 22, 70 34 C 72 44, 60 52, 50 56 C 40 52, 28 44, 30 34 Z" fill="currentColor"/>' + waveBase + commonTail;
+        case 'N': case 'n': // Knight = curling wave crest
+          return commonHead + '<path d="M28 30 C 38 18, 70 18, 72 34 C 70 44, 62 50, 52 52 C 42 54, 34 62, 32 72 C 28 56, 20 44, 28 30 Z" fill="currentColor"/>' + waveBase + commonTail;
+        case 'B': case 'b': // Bishop = tall tapered wave spire
+          return commonHead + '<path d="M50 16 C 58 28, 58 44, 50 56 C 42 44, 42 28, 50 16 Z" fill="currentColor"/>' + waveBase + commonTail;
+        case 'R': case 'r': // Rook = layered wave blocks
+          return commonHead + '<rect x="30" y="20" width="40" height="16" rx="4" fill="currentColor"/><rect x="26" y="40" width="48" height="16" rx="4" fill="currentColor"/>' + waveBase + commonTail;
+        case 'Q': case 'q': // Queen = wide crest with curl
+          return commonHead + '<path d="M22 28 C 36 16, 78 16, 82 32 C 78 44, 60 48, 50 52 C 40 48, 26 40, 22 28 Z" fill="currentColor"/>' + waveBase + commonTail;
+        case 'K': case 'k': // King = twin crest spires
+          return commonHead + '<path d="M34 18 C 42 26, 42 40, 34 52 C 26 40, 26 26, 34 18 Z" fill="currentColor"/><path d="M66 18 C 74 26, 74 40, 66 52 C 58 40, 58 26, 66 18 Z" fill="currentColor"/>' + waveBase + commonTail;
+        default:
+          return commonHead + waveBase + commonTail;
+      }
+    }
+
     function createPieceVisual(p, isDrag){
       const span = document.createElement("span");
       const colorClass = (p.color === WHITE ? "white" : "black");
+      const isOcean = document.body.classList.contains('theme-ocean');
       span.className = "piece " + colorClass + (p.highlight ? " danger" : "");
-      if (p.type === "P" || p.type === "p"){
-        span.innerHTML = pawnSVG(p.color, p.highlight);
+      
+      // Use Ocean water-themed SVGs when Ocean theme is active
+      if (isOcean){
+        span.innerHTML = oceanPieceSVG(p.type);
       } else {
-        span.textContent = (p.color === WHITE ? WHITE_SYM[p.type] : BLACK_SYM[p.type.toLowerCase()]);
+        // Use original rendering for other themes
+        if (p.type === "P" || p.type === "p"){
+          span.innerHTML = pawnSVG(p.color, p.highlight);
+        } else {
+          span.textContent = (p.color === WHITE ? WHITE_SYM[p.type] : BLACK_SYM[p.type.toLowerCase()]);
+        }
       }
+      
       if (isDrag){
         span.style.display = "flex";
         span.style.alignItems = "center";
