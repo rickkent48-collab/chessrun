@@ -800,7 +800,7 @@
     oceanBtn?.classList.toggle('selected', theme === 'ocean');
     neonBtn?.classList.toggle('selected', theme === 'neon');
     // Re-render board if game is in progress to apply theme-specific piece rendering
-    if (typeof renderBoard === 'function' && typeof board !== 'undefined' && board){
+    if (typeof renderBoard === 'function' && board){
       renderBoard();
     }
   }
@@ -2234,7 +2234,7 @@
       const key = (type || 'p').toLowerCase();
       const body = shapes[key] || shapes['p'];
       // Generate unique filter ID to avoid conflicts between multiple pieces
-      const filterId = 'waveDepth_' + Date.now() + '_' + (oceanPieceFilterCounter++);
+      const filterId = 'waveDepth_' + (oceanPieceFilterCounter++);
       return `
         <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
           <defs>
