@@ -416,6 +416,33 @@
       stroke-width: 1.2;
       paint-order: stroke fill; /* stroke sits above fill */
     }
+
+    /* Ocean theme: water-themed sprite treatment (text glyphs and pawn SVG) */
+    .theme-ocean .piece{
+      /* Glossy water look: gentle top highlight, inner shadow, and soft colored shadow */
+      text-shadow:
+        0 -1px 0 rgba(255,255,255,0.30),   /* top sheen */
+        0  1px 0 rgba(0,0,0,0.35),         /* inner carve */
+        0  6px 10px rgba(0,127,255,0.25);  /* soft colored shadow */
+      filter: saturate(1.12) contrast(1.06);
+    }
+
+    /* Ocean pawns: subtle edge strokes and luminous drop-shadows */
+    .theme-ocean .piece svg{
+      filter: drop-shadow(0 -1px 0 rgba(255,255,255,0.28)) drop-shadow(0 6px 10px rgba(0,127,255,0.22));
+    }
+    .theme-ocean .piece svg circle,
+    .theme-ocean .piece svg path,
+    .theme-ocean .piece svg rect{
+      stroke: rgba(255,255,255,0.25);   /* light edge stroke for specular feel */
+      stroke-width: 1.1;
+      paint-order: stroke fill;         /* stroke above fill for crisp edges */
+    }
+
+    /* Preserve killer (danger) red highlight across all themes */
+    .piece.danger,
+    .piece.danger.white,
+    .piece.danger.black{ color: var(--danger) !important; }
   </style>
 </head>
 <body>
