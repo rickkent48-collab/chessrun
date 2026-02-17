@@ -2209,7 +2209,7 @@
       $board.appendChild(frag);
     }
 
-    function oceanPieceSVG(type, color, highlight=false){
+    function oceanPieceSVG(type){
       // Use currentColor so theme colors and danger highlight apply
       const fill = 'currentColor';
       const stroke = 'rgba(255,255,255,0.25)'; // soft light edge to suggest water
@@ -2252,7 +2252,7 @@
       span.className = "piece " + colorClass + (p.highlight ? " danger" : "");
       const isOcean = document.body.classList.contains('theme-ocean');
       if (isOcean){
-        span.innerHTML = oceanPieceSVG(p.type, p.color, !!p.highlight);
+        span.innerHTML = oceanPieceSVG(p.type);
       } else {
         // fallback to original behavior
         if (p.type === "P" || p.type === "p"){
