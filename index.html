@@ -2229,7 +2229,7 @@
         'q': `<path d="M20 68 C28 44, 44 32, 50 28 C56 32, 72 44, 80 68 C66 74, 34 74, 20 68Z" ${commonAttrs}/>`+
               `<circle cx="50" cy="24" r="10" ${commonAttrs}/>`,
         'k': `<path d="M24 68 C32 46, 44 34, 50 30 C56 34, 68 46, 76 68 C64 74, 36 74, 24 68Z" ${commonAttrs}/>`+
-              `<path d="M46 24 L46 16 M54 24 L54 16 M42 20 L58 20" ${commonAttrs}/>`
+              `<path d="M46 24 L46 16 M54 24 L54 16 M42 20 L58 20" fill="none" stroke="${darkStroke}" stroke-width="2.5"/>`
       };
       const key = (type || 'p').toLowerCase();
       const body = shapes[key] || shapes['p'];
