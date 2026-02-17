@@ -363,7 +363,7 @@
     /* Ocean theme: enhance SVG pieces with gentle watery edge without altering color */
     .theme-ocean .piece svg path,
     .theme-ocean .piece svg circle,
-    .theme-ocean .piece svg rect{
+    .theme-ocean .piece svg rect {
       stroke: rgba(255, 255, 255, 0.20); /* light edge on water silhouette */
       stroke-width: 1.2;
       paint-order: stroke fill;
@@ -2209,6 +2209,9 @@
       $board.appendChild(frag);
     }
 
+    // Counter for unique SVG filter IDs
+    let oceanPieceFilterCounter = 0;
+
     function oceanPieceSVG(type){
       // Use currentColor so theme colors and danger highlight apply
       const fill = 'currentColor';
@@ -2231,7 +2234,7 @@
       const key = (type || 'p').toLowerCase();
       const body = shapes[key] || shapes['p'];
       // Generate unique filter ID to avoid conflicts between multiple pieces
-      const filterId = 'waveDepth_' + Math.random().toString(36).slice(2, 11);
+      const filterId = 'waveDepth_' + Date.now() + '_' + (oceanPieceFilterCounter++);
       return `
         <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
           <defs>
