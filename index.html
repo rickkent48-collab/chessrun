@@ -364,11 +364,11 @@
     .theme-ocean .piece svg path,
     .theme-ocean .piece svg circle,
     .theme-ocean .piece svg rect{
-      stroke: rgba(255,255,255,0.20); /* light edge on water silhouette */
+      stroke: rgba(255, 255, 255, 0.20); /* light edge on water silhouette */
       stroke-width: 1.2;
       paint-order: stroke fill;
     }
-    .theme-ocean .piece svg{ filter: drop-shadow(0 2px 1px rgba(0,0,0,0.16)) drop-shadow(0 -1px 0 rgba(255,255,255,0.14)); }
+    .theme-ocean .piece svg{ filter: drop-shadow(0 2px 1px rgba(0, 0, 0, 0.16)) drop-shadow(0 -1px 0 rgba(255, 255, 255, 0.14)); }
 
     /* HUD scores white in Ocean */
     .theme-ocean .captures,
@@ -2212,7 +2212,7 @@
     function oceanPieceSVG(type){
       // Use currentColor so theme colors and danger highlight apply
       const fill = 'currentColor';
-      const darkStroke = 'rgba(0,0,0,0.20)';    // subtle inner outline
+      const darkStroke = 'rgba(0, 0, 0, 0.20)';    // subtle inner outline
       const commonAttrs = `fill="${fill}" stroke="${darkStroke}" stroke-width="1.2"`;
       // Simple wave motifs per piece type; silhouettes designed with gentle bezier wave curves
       const shapes = {
@@ -2231,13 +2231,13 @@
       const key = (type || 'p').toLowerCase();
       const body = shapes[key] || shapes['p'];
       // Generate unique filter ID to avoid conflicts between multiple pieces
-      const filterId = 'waveDepth_' + Math.random().toString(36).substr(2, 9);
+      const filterId = 'waveDepth_' + Math.random().toString(36).slice(2, 11);
       return `
         <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
           <defs>
             <filter id="${filterId}" x="-20%" y="-20%" width="140%" height="140%">
-              <feDropShadow dx="0" dy="2" stdDeviation="1.5" flood-color="rgba(0,0,0,0.18)"/>
-              <feDropShadow dx="0" dy="-1" stdDeviation="0.8" flood-color="rgba(255,255,255,0.18)"/>
+              <feDropShadow dx="0" dy="2" stdDeviation="1.5" flood-color="rgba(0, 0, 0, 0.18)"/>
+              <feDropShadow dx="0" dy="-1" stdDeviation="0.8" flood-color="rgba(255, 255, 255, 0.18)"/>
             </filter>
           </defs>
           <g filter="url(#${filterId})">
