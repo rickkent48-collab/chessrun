@@ -1058,7 +1058,39 @@
     function forbidFrontRookForPawn(){
       if (player.type !== "P") return true;
       const ahead = board[1]?.[player.col] || null;
-      return !(ahead && ahead.color === BLACK && ahead.type === "R");
+      // Check both uppercase 'R' and lowercase 'r' rook types
+      return !(ahead && ahead.color === BLACK && (ahead.type === "R" || ahead.type === "r"));
+    }
+
+    // Add extra opposition near pawn column to increase difficulty while retaining solvability
+    function biasPawnColumnDifficulty(protectedSquares){
+      if (player.type !== "P") return;
+      const cols = [player.col - 1, player.col, player.col + 1].filter(c => c >= 0 && c < BOARD_COLS);
+      const candidateRows = [2,3,4,5]; // early/mid rows to influence initial decisions
+      const types = ["B","N","R"]; // non-queen to avoid overwhelming; rook allowed but not at row 1
+
+      // target number of extra blockers/capture choices
+      const targetExtra = randInt(2, 4);
+      let placed = 0, safety = 0;
+      while (placed < targetExtra && safety < 20){
+        const c = cols[randInt(0, cols.length - 1)];
+        const r = candidateRows[randInt(0, candidateRows.length - 1)];
+        if (protectedSquares.has(keyOf(r,c))) { safety++; continue; }
+        const cur = board[r][c];
+        if (cur) { safety++; continue; }
+        // Avoid the immediate-ahead square special-case and edges
+        if (r === 1 && c === player.col) { safety++; continue; }
+        const t = types[randInt(0, types.length - 1)];
+        board[r][c] = { color: BLACK, type: t };
+        // Validate solvability after placement; if unsolvable, undo and retry
+        const res = bfsSafePath(board, player.type);
+        if (!(res && res.path && res.path.length)){
+          board[r][c] = null; // undo
+          safety++;
+          continue;
+        }
+        placed++;
+      }
     }
 
     function generateValidSegment(){
@@ -1119,6 +1151,8 @@
         if (player.type === "P"){
           restrictFirstOppositionInAdjacentColumns(protectedSquares);
           enforceMandatoryAdjacentRook(protectedSquares);
+          // New: increase pawn-board difficulty around pawn column
+          biasPawnColumnDifficulty(protectedSquares);
         }
 
         const res = bfsSafePath(board, player.type);
@@ -1134,10 +1168,18 @@
       }
 
       for (let r=1;r<=3;r++){ board[r][player.col] = null; guardSquareFromAttackWithImmutables(r, player.col, mandatoryRookKeys); }
+      // Additional sanitization: never allow a rook directly ahead of pawn at row 1
+      const fwd = board[1] && board[1][player.col];
+      if (player.type === "P" && fwd && fwd.color === BLACK && (fwd.type === "R" || fwd.type === "r")){
+        board[1][player.col] = null;
+        guardSquareFromAttackWithImmutables(1, player.col, mandatoryRookKeys);
+      }
+
       placeOppositionWithConstraints(randInt(minOpp, maxOpp), new Set());
       if (player.type === "P"){
         enforceMandatoryAdjacentRook(new Set());
         ensureTwoPawnDecisionEvents(new Set());
+        biasPawnColumnDifficulty(new Set());
       }
       enforceOppositionCountRange(minOpp, maxOpp, new Set());
     }
