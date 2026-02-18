@@ -1067,12 +1067,13 @@
       if (player.type !== "P") return;
       const cols = [player.col - 1, player.col, player.col + 1].filter(c => c >= 0 && c < BOARD_COLS);
       const candidateRows = [2,3,4,5]; // early/mid rows to influence initial decisions
-      const types = ["B","N","R"]; // non-queen to avoid overwhelming; rook allowed but not at row 1
+      const types = ["B","N","R"]; // non-queen to avoid overwhelming; rook allowed but not at row 1, player.col
 
       // target number of extra blockers/capture choices
       const targetExtra = randInt(2, 4);
+      const maxPlacementAttempts = 20; // prevent infinite loops
       let placed = 0, safety = 0;
-      while (placed < targetExtra && safety < 20){
+      while (placed < targetExtra && safety < maxPlacementAttempts){
         const c = cols[randInt(0, cols.length - 1)];
         const r = candidateRows[randInt(0, candidateRows.length - 1)];
         if (protectedSquares.has(keyOf(r,c))) { safety++; continue; }
