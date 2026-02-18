@@ -1165,8 +1165,8 @@
 
     function randomValidOppositionType(){
       // Prefer blockers and capture choices: pawns, knights, bishops; allow rook elsewhere, not front
-      const types = ["p","N","B","R","Q"];
-      return types[randInt(0, types.length-1)];
+      const oppositionPieceTypes = ["p","N","B","R","Q"];
+      return oppositionPieceTypes[randInt(0, oppositionPieceTypes.length-1)];
     }
 
     function intensifyPawnBoard(protectedSquares){
@@ -1203,7 +1203,7 @@
     function relocateOneRookAvoidingStart(){
       // find any empty square away from row 1, player's col, and protected start path
       const spots = [];
-      const MAX_CANDIDATES = 20; // Early termination for efficiency
+      const MAX_CANDIDATES = 20; // Limit candidates for efficiency; 20 is sufficient for random selection on typical boards
       for (let r=1;r<=TOP_ROW;r++){
         for (let c=0;c<BOARD_COLS;c++){
           if (r===1 && c===player.col) continue;
