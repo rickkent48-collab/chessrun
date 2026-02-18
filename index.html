@@ -1186,7 +1186,6 @@
         }
       }
       shuffle(cand);
-      const snapshotBoard = cloneBoard(board);
       while (added < MAX_ADDITIONS && cand.length){
         const [r,c] = cand.pop();
         const t = randomValidOppositionType();
@@ -1194,7 +1193,6 @@
         const res = bfsSafePath(board, player.type);
         if (res && res.path && res.path.length){
           added++;
-          snapshotBoard[r][c] = board[r][c]; // update snapshot to include this piece
         } else {
           // revert if not solvable
           board[r][c] = null;
@@ -1205,12 +1203,15 @@
     function relocateOneRookAvoidingStart(){
       // find any empty square away from row 1, player's col, and protected start path
       const spots = [];
+      const MAX_CANDIDATES = 20; // Early termination for efficiency
       for (let r=1;r<=TOP_ROW;r++){
         for (let c=0;c<BOARD_COLS;c++){
           if (r===1 && c===player.col) continue;
           if (board[r][c]) continue;
           spots.push([r,c]);
+          if (spots.length >= MAX_CANDIDATES) break;
         }
+        if (spots.length >= MAX_CANDIDATES) break;
       }
       shuffle(spots);
       if (spots.length){
