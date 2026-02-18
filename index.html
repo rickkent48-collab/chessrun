@@ -416,6 +416,13 @@
       stroke-width: 1.2;
       paint-order: stroke fill; /* stroke sits above fill */
     }
+
+    /* Remove carved wood effects in Vintage theme only */
+    .theme-classic .piece{ text-shadow: none !important; filter: none !important; }
+    .theme-classic .piece svg{ filter: none !important; }
+    .theme-classic .piece svg circle,
+    .theme-classic .piece svg path,
+    .theme-classic .piece svg rect{ stroke: none !important; stroke-width: 0 !important; }
   </style>
 </head>
 <body>
@@ -1047,10 +1054,22 @@
     }
 
     // --------------------- Generation with validation ---------------------
+    // Reject segments that place a rook directly ahead of a pawn at start
+    function forbidFrontRookForPawn(){
+      if (player.type !== "P") return true;
+      const ahead = board[1]?.[player.col] || null;
+      return !(ahead && ahead.color === BLACK && ahead.type === "R");
+    }
+
     function generateValidSegment(){
       mandatoryRookKeys = new Set();
       generatePuzzleSegment();
       guardStartSquare();
+
+      // New constraint: avoid rook directly in front of player pawn
+      if (!forbidFrontRookForPawn()){
+        return false;
+      }
 
       if (!hasSafeFirstMoveFromStart()){
         return false;
