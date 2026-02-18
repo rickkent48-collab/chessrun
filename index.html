@@ -1058,7 +1058,27 @@
     function forbidFrontRookForPawn(){
       if (player.type !== "P") return true;
       const ahead = board[1]?.[player.col] || null;
-      return !(ahead && ahead.color === BLACK && ahead.type === "R");
+      if (!ahead) return true;
+      const t = String(ahead.type || "");
+      return !(ahead.color === BLACK && (t === "R" || t === "r"));
+    }
+
+    // As a last resort, scrub/adjust if needed (should rarely run)
+    function scrubFrontRookIfAnyPreservingCount(){
+      if (player.type !== "P") return true;
+      const cell = (board[1] && board[1][player.col]) ? board[1][player.col] : null;
+      if (!cell) return true;
+      const t = String(cell.type || "");
+      if (cell.color === BLACK && (t === "R" || t === "r")){
+        // Try converting the rook to a knight ("N") which still poses threat/capture but isn't a vertical wall
+        board[1][player.col] = { color: BLACK, type: "N" };
+        const ok = !!(bfsSafePath(board, player.type)?.path?.length);
+        if (!ok){
+          // If conversion breaks solvability, remove it entirely and let counts be enforced by existing logic upstream
+          board[1][player.col] = null;
+        }
+      }
+      return true;
     }
 
     function generateValidSegment(){
@@ -1077,6 +1097,9 @@
 
       if (!constrictAlternatesUsingPath()) return false;
 
+      // Final scrub (belt-and-braces) before BFS ensurement
+      scrubFrontRookIfAnyPreservingCount();
+
       const res = bfsSafePath(board, player.type);
       return !!(res && res.path && res.path.length);
     }
@@ -1089,6 +1112,42 @@
         }
       }
       return false;
+    }
+
+    // Add extra blockers/capture choices for pawn boards while preserving solvability
+    function addPawnHardening(protectedSquares){
+      // Number of additional attempts/placements to increase density/difficulty
+      const MAX_ADDS = 4; // add up to 4 extra pieces
+      const candidates = [];
+      for (let r = 1; r <= 3; r++){
+        for (let c = 0; c < BOARD_COLS; c++){
+          const key = r+","+c;
+          if (protectedSquares && protectedSquares.has(key)) continue;
+          // Avoid start file forward square and current player square
+          if (r === 1 && c === player.col) continue;
+          if (board[r][c]) continue;
+          candidates.push([r,c]);
+        }
+      }
+      shuffle(candidates);
+
+      let adds = 0, tries = 0;
+      while (adds < MAX_ADDS && tries < candidates.length){
+        const [r,c] = candidates[tries++];
+        // Prefer a mix: pawns and knights as block/capture creators, occasional bishop
+        const pool = ["p","p","N","N","B"]; // lower-case type is fine; renderer normalizes
+        const t = pool[randInt(0, pool.length-1)];
+        const piece = { color: BLACK, type: t };
+
+        board[r][c] = piece;
+        // Keep only if solvable remains
+        const ok = !!(bfsSafePath(board, player.type)?.path?.length);
+        if (ok){
+          adds++;
+        } else {
+          board[r][c] = null; // revert placement
+        }
+      }
     }
 
     function generatePuzzleSegment(){
@@ -1125,7 +1184,13 @@
         if (res && res.path && res.path.length){
           enforceOppositionCountRange(minOpp, maxOpp, protectedSquares);
           const res2 = bfsSafePath(board, player.type);
-          if (res2 && res2.path && res2.path.length) return;
+          if (res2 && res2.path && res2.path.length){
+            // Apply pawn hardening for pawn boards before accepting the segment
+            if (player.type === "P"){
+              addPawnHardening(protectedSquares);
+            }
+            return;
+          }
         }
 
         repairEarlyRows(protectedSquares);
