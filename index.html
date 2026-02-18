@@ -1116,7 +1116,7 @@
 
         // Increase difficulty for pawn boards by biasing opposition count upward
         const targetOpp = (player.type === "P")
-          ? randInt(Math.min(minOpp+2, maxOpp), Math.min(maxOpp+3, maxOpp+3))
+          ? randInt(Math.min(minOpp+2, maxOpp), maxOpp+3)
           : randInt(minOpp, maxOpp);
 
         placeOppositionWithConstraints(targetOpp, protectedSquares);
@@ -1187,7 +1187,6 @@
       }
       shuffle(cand);
       const snapshotBoard = cloneBoard(board);
-      const snapshotMand = new Set(mandatoryRookKeys);
       while (added < MAX_ADDITIONS && cand.length){
         const [r,c] = cand.pop();
         const t = randomValidOppositionType();
