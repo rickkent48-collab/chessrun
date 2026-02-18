@@ -1117,7 +1117,8 @@
     // Add extra blockers/capture choices for pawn boards while preserving solvability
     function addPawnHardening(protectedSquares){
       // Number of additional attempts/placements to increase density/difficulty
-      const MAX_ADDS = 4; // add up to 4 extra pieces
+      // Set to 4 to balance increased challenge without overwhelming solvability
+      const MAX_ADDS = 4;
       const candidates = [];
       for (let r = 1; r <= 3; r++){
         for (let c = 0; c < BOARD_COLS; c++){
@@ -1135,7 +1136,7 @@
       while (adds < MAX_ADDS && tries < candidates.length){
         const [r,c] = candidates[tries++];
         // Prefer a mix: pawns and knights as block/capture creators, occasional bishop
-        const pool = ["p","p","N","N","B"]; // lower-case type is fine; renderer normalizes
+        const pool = ["p","p","n","n","b"];
         const t = pool[randInt(0, pool.length-1)];
         const piece = { color: BLACK, type: t };
 
