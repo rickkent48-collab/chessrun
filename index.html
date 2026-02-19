@@ -506,6 +506,10 @@
           <div class="stat-row" style="justify-content:center;">
             <button id="resetStatsBtn" class="play-btn" type="button">Reset Stats</button>
           </div>
+          <div class="stat-blank">&nbsp;</div>
+          <div class="stat-row" style="justify-content:center;">
+            <button id="privacyPolicyBtn" class="play-btn" type="button">Privacy Policy</button>
+          </div>
         </div>
         <div class="stats-spacer"></div>
       </div>
@@ -805,6 +809,10 @@
 
   // Initialize selection state from saved preference
   applyTheme(currentTheme);
+
+  document.getElementById('privacyPolicyBtn')?.addEventListener('click', function(){
+    window.open('https://docs.google.com/document/d/e/2PACX-1vSEezHmS2ktPkFL3lIV4qE8GEhIB4UQ8tTna3uKeVoOUcedrId0luAVYjbJjkQEiHrZJXjbzDF3QGGk/pub', '_blank', 'noopener,noreferrer');
+  });
   </script>
 
   <script>
