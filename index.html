@@ -873,33 +873,33 @@
 
     const OPP_WEIGHTS = {
       near: [
-        { p:0.38, k:0.24, n:0.20, b:0.10, r:0.07, q:0.01 }, // Pawn
-        { p:0.34, k:0.22, n:0.20, b:0.12, r:0.08, q:0.04 }, // King
-        { p:0.30, k:0.20, n:0.18, b:0.15, r:0.12, q:0.05 }, // Knight
-        { p:0.26, k:0.18, n:0.16, b:0.18, r:0.16, q:0.06 }, // Bishop
-        { p:0.22, k:0.16, n:0.16, b:0.20, r:0.18, q:0.08 }, // Rook
-        { p:0.18, k:0.14, n:0.14, b:0.22, r:0.20, q:0.12 }, // Queen
+        { p:0.20, k:0.12, n:0.18, b:0.22, r:0.22, q:0.06 }, // Pawn
+        { p:0.18, k:0.12, n:0.18, b:0.24, r:0.22, q:0.06 }, // King
+        { p:0.16, k:0.10, n:0.18, b:0.26, r:0.24, q:0.06 }, // Knight
+        { p:0.14, k:0.10, n:0.16, b:0.28, r:0.26, q:0.06 }, // Bishop
+        { p:0.12, k:0.08, n:0.14, b:0.30, r:0.28, q:0.08 }, // Rook
+        { p:0.10, k:0.08, n:0.12, b:0.30, r:0.30, q:0.10 }, // Queen
       ],
       far: [
-        { p:0.34, k:0.22, n:0.18, b:0.12, r:0.10, q:0.04 }, // Pawn
-        { p:0.30, k:0.20, n:0.18, b:0.16, r:0.14, q:0.02 }, // King
-        { p:0.28, k:0.18, n:0.16, b:0.18, r:0.16, q:0.04 }, // Knight
-        { p:0.24, k:0.16, n:0.15, b:0.20, r:0.18, q:0.07 }, // Bishop
-        { p:0.22, k:0.14, n:0.14, b:0.22, r:0.20, q:0.08 }, // Rook
-        { p:0.18, k:0.12, n:0.12, b:0.24, r:0.22, q:0.12 }, // Queen
+        { p:0.18, k:0.12, n:0.18, b:0.22, r:0.24, q:0.06 }, // Pawn
+        { p:0.16, k:0.12, n:0.18, b:0.24, r:0.24, q:0.06 }, // King
+        { p:0.14, k:0.10, n:0.18, b:0.26, r:0.26, q:0.06 }, // Knight
+        { p:0.12, k:0.10, n:0.16, b:0.28, r:0.28, q:0.06 }, // Bishop
+        { p:0.12, k:0.08, n:0.14, b:0.30, r:0.28, q:0.08 }, // Rook
+        { p:0.10, k:0.08, n:0.12, b:0.30, r:0.30, q:0.10 }, // Queen
       ]
     };
 
     const OPP_COUNTS = [
-      [10, 16],   // Pawn
-      [12, 18],   // King
-      [14, 20],   // Knight
-      [15, 22],   // Bishop
-      [16, 24],   // Rook
-      [18, 26],   // Queen
+      [16, 24],   // Pawn
+      [18, 26],   // King
+      [20, 28],   // Knight
+      [22, 30],   // Bishop
+      [24, 32],   // Rook
+      [26, 34],   // Queen
     ];
 
-    const CONSTRICTION = [0.35, 0.5, 0.6, 0.7, 0.8, 0.85];
+    const CONSTRICTION = [0.60, 0.75, 0.85, 0.90, 0.92, 0.95];
 
     function currentStage(){ return STAGE_INDEX[player.type] ?? 0; }
 
@@ -1041,7 +1041,7 @@
     // New game setup
     function resetBoardForNewGame(){
       let tries = 0;
-      while (tries < 80){
+      while (tries < 200){
         board = createEmptyBoard();
         player.col = chooseSafeStartingColumn();
         player.row = 0;
