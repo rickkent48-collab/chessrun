@@ -1063,11 +1063,12 @@
 
     // --------------------- Generation with validation ---------------------
     // Reject segments that place a rook directly ahead of a pawn at start
-    function forbidFrontRookForPawn(){
-      if (player.type !== "P") return true;
+    function isFrontRookAtStart(){
+      if (player.type !== "P") return false;
       const ahead = board[1]?.[player.col] || null;
-      return !(ahead && ahead.color === BLACK && ahead.type === "R");
+      return !!(ahead && ahead.color === BLACK && ahead.type === "R");
     }
+    function forbidFrontRookForPawn(){ return !isFrontRookAtStart(); }
 
     function generateValidSegment(){
       mandatoryRookKeys = new Set();
@@ -1121,12 +1122,24 @@
           if (!successTwo){ attempts++; continue; }
         }
 
-        const targetOpp = randInt(minOpp, maxOpp);
+        // Increase difficulty for pawn boards by biasing opposition count upward
+        const targetOpp = (player.type === "P")
+          ? randInt(Math.min(minOpp+2, maxOpp), maxOpp+3)
+          : randInt(minOpp, maxOpp);
+
         placeOppositionWithConstraints(targetOpp, protectedSquares);
 
         if (player.type === "P"){
           restrictFirstOppositionInAdjacentColumns(protectedSquares);
           enforceMandatoryAdjacentRook(protectedSquares);
+        }
+
+        // Hard prohibition: if a rook is directly ahead of the pawn at start, reject this attempt
+        if (isFrontRookAtStart()){ attempts++; continue; }
+
+        // Intensify pawn difficulty: add extra blockers/capture choices near forward lanes
+        if (player.type === "P"){
+          intensifyPawnBoard(protectedSquares);
         }
 
         const res = bfsSafePath(board, player.type);
@@ -1141,13 +1154,78 @@
         attempts++;
       }
 
+      // Fallback path: still enforce no front rook and increase pawn difficulty
       for (let r=1;r<=3;r++){ board[r][player.col] = null; guardSquareFromAttackWithImmutables(r, player.col, mandatoryRookKeys); }
       placeOppositionWithConstraints(randInt(minOpp, maxOpp), new Set());
       if (player.type === "P"){
         enforceMandatoryAdjacentRook(new Set());
         ensureTwoPawnDecisionEvents(new Set());
+        // If rook ahead slipped through, relocate it immediately
+        if (isFrontRookAtStart()){
+          // remove the rook and place it on a random non-protected, non-start-adjacent square
+          board[1][player.col] = null;
+          relocateOneRookAvoidingStart();
+        }
+        intensifyPawnBoard(new Set());
       }
       enforceOppositionCountRange(minOpp, maxOpp, new Set());
+    }
+
+    function randomValidOppositionType(){
+      // Prefer blockers and capture choices: pawns, knights, bishops; allow rook elsewhere, not front
+      const oppositionPieceTypes = ["p","N","B","R","Q"];
+      return oppositionPieceTypes[randInt(0, oppositionPieceTypes.length-1)];
+    }
+
+    function intensifyPawnBoard(protectedSquares){
+      // Try up to N additions around forward lanes/diagonals; keep only if solvable
+      const MAX_ADDITIONS = 4;
+      let added = 0;
+      const cand = [];
+      const pc = player.col;
+      // candidate squares: rows 2..4 in same/adjacent columns, plus forward diagonals further ahead
+      for (let r=2;r<=4;r++){
+        for (let dc of [-1,0,1]){
+          const c = pc + dc;
+          if (!inBounds(r,c)) continue;
+          const k = keyOf(r,c);
+          if (protectedSquares.has(k)) continue;
+          if (!board[r][c]) cand.push([r,c]);
+        }
+      }
+      shuffle(cand);
+      while (added < MAX_ADDITIONS && cand.length){
+        const [r,c] = cand.pop();
+        const t = randomValidOppositionType();
+        placePiece(r,c,{ color: BLACK, type: t });
+        const res = bfsSafePath(board, player.type);
+        if (res && res.path && res.path.length){
+          added++;
+        } else {
+          // revert if not solvable
+          board[r][c] = null;
+        }
+      }
+    }
+
+    function relocateOneRookAvoidingStart(){
+      // find any empty square away from row 1, player's col, and protected start path
+      const spots = [];
+      const MAX_CANDIDATES = 20; // Limit candidates for efficiency; 20 is sufficient for random selection on typical boards
+      for (let r=1;r<=TOP_ROW;r++){
+        for (let c=0;c<BOARD_COLS;c++){
+          if (r===1 && c===player.col) continue;
+          if (board[r][c]) continue;
+          spots.push([r,c]);
+          if (spots.length >= MAX_CANDIDATES) break;
+        }
+        if (spots.length >= MAX_CANDIDATES) break;
+      }
+      shuffle(spots);
+      if (spots.length){
+        const [r,c] = spots[0];
+        placePiece(r,c,{ color: BLACK, type: "R" });
+      }
     }
 
     function buildTruthPathWithForcedSwitch(protectedSquares){
