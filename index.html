@@ -1062,11 +1062,22 @@
     }
 
     // --------------------- Generation with validation ---------------------
-    // Reject segments that place a rook directly ahead of a pawn at start
-    function forbidFrontRookForPawn(){
-      if (player.type !== "P") return true;
-      const ahead = board[1]?.[player.col] || null;
-      return !(ahead && ahead.color === BLACK && ahead.type === "R");
+    // Returns true if a BLACK rook attacks (r,c) along clear ranks/files
+    function isSquareAttackedByBlackRook(r, c){
+      // Scan four directions until a blocker or rook is found
+      const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+      for (const [dr,dc] of dirs){
+        let rr = r + dr, cc = c + dc;
+        while (inBounds(rr,cc)){
+          const d = board[rr][cc];
+          if (d){
+            if (d.color === BLACK && d.type === "R") return true; // rook sees start
+            break; // blocked by any piece
+          }
+          rr += dr; cc += dc;
+        }
+      }
+      return false;
     }
 
     function generateValidSegment(){
@@ -1074,9 +1085,9 @@
       generatePuzzleSegment();
       guardStartSquare();
 
-      // New constraint: avoid rook directly in front of player pawn
-      if (!forbidFrontRookForPawn()){
-        return false;
+      // NEW: Never allow a rook to attack the pawn at start
+      if (player.type === "P" && isSquareAttackedByBlackRook(0, player.col)){
+        return false; // regenerate
       }
 
       if (!hasSafeFirstMoveFromStart()){
@@ -1127,6 +1138,8 @@
         if (player.type === "P"){
           restrictFirstOppositionInAdjacentColumns(protectedSquares);
           enforceMandatoryAdjacentRook(protectedSquares);
+          // NEW: Densify starting and adjacent columns in early rows for harder pawn boards
+          intensifyPawnStartColumns(protectedSquares);
         }
 
         const res = bfsSafePath(board, player.type);
@@ -1146,6 +1159,7 @@
       if (player.type === "P"){
         enforceMandatoryAdjacentRook(new Set());
         ensureTwoPawnDecisionEvents(new Set());
+        intensifyPawnStartColumns(new Set()); // ensure difficulty bump also applies to fallback path
       }
       enforceOppositionCountRange(minOpp, maxOpp, new Set());
     }
@@ -1470,6 +1484,44 @@
             placed = true; break;
           }
           if (placed) break;
+        }
+      }
+    }
+
+    function intensifyPawnStartColumns(protectedSquares){
+      if (player.type !== "P") return; // only for pawn boards
+      const cols = [player.col];
+      if (player.col-1 >= 0) cols.push(player.col-1);
+      if (player.col+1 < BOARD_COLS) cols.push(player.col+1);
+
+      // Candidate pieces for capture choices and blockages
+      const capturables = ["p","n","b"]; // black pawn/knight/bishop - easier to capture
+      const blockers    = ["R","B"];     // rook/bishop - stronger blockers (still capturable)
+      
+      // Shuffle once outside the loops for efficiency
+      const tryTypes = shuffleCopy([...capturables, ...blockers]);
+
+      // Target density in rows 1..3 for these columns
+      const targets = [1,2,3];
+      for (const r of targets){
+        for (const c of cols){
+          if (!board[r][c]){
+            for (const t of tryTypes){
+              const piece = { color: BLACK, type: t };
+              // Avoid overwriting protected path squares
+              const key = `${r},${c}`;
+              if (protectedSquares && protectedSquares.has(key)) continue;
+
+              const saved = board[r][c];
+              board[r][c] = piece;
+              const res = bfsSafePath(board, player.type);
+              if (res && res.path && res.path.length){
+                break; // keep this placement; increases local difficulty
+              } else {
+                board[r][c] = saved; // revert if unsolvable
+              }
+            }
+          }
         }
       }
     }
