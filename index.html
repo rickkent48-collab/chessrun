@@ -255,6 +255,15 @@
     .stat-white{ color: #FFFFFF; }
     .stat-gold{  color: var(--gold); }
 
+    /* About popup */
+    .about-sheet{ height: auto; max-height: 88vh; top: 50%; bottom: auto; transform: translateY(-50%); left: 4vw; right: 4vw; width: auto; }
+    .about-inner{ position: static; padding: 16px 18px 18px; display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; max-height: calc(88vh - 8px); box-sizing: border-box; }
+    .about-title{ color: var(--gold); font-size: clamp(18px, 5vw, 24px); font-weight: 800; text-align: center; margin-bottom: 10px; }
+    .about-scroll{ overflow-y: auto; flex: 1 1 auto; }
+    .about-section{ margin-bottom: 10px; }
+    .about-subtitle{ color: var(--gold); font-size: clamp(15px, 4vw, 18px); font-weight: 800; margin-bottom: 4px; }
+    .about-text{ color: #FFFFFF; font-size: clamp(12px, 3.2vw, 15px); line-height: 1.4; margin: 0 0 6px; font-family: "Boogaloo", system-ui; }
+
     /* Remove red glow and set selected visual with white background */
     #themes .play-btn{ color:#000000 !important; }
     #themes .play-btn.selected{
@@ -510,8 +519,38 @@
           <div class="stat-row" style="justify-content:center;">
             <button id="privacyPolicyBtn" class="play-btn" type="button">Privacy Policy</button>
           </div>
+          <div class="stat-blank">&nbsp;</div>
+          <div class="stat-row" style="justify-content:center;">
+            <button id="aboutBtn" class="play-btn" type="button">About</button>
+          </div>
         </div>
         <div class="stats-spacer"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="about" class="stats about-popup" role="dialog" aria-modal="true" aria-labelledby="aboutTitle">
+    <div id="aboutBackdrop" class="stats-backdrop" aria-hidden="true"></div>
+    <div id="aboutSheet" class="stats-sheet about-sheet">
+      <div class="stats-inner about-inner">
+        <div id="aboutTitle" class="stats-title about-title">About</div>
+        <div class="about-scroll">
+          <div class="about-section">
+            <div class="about-subtitle">How To Play</div>
+            <p class="about-text">Chess Run is a modern twist on classic chess where survival depends on the moves you make.</p>
+            <p class="about-text">In this minimalist challenge, you control a single chess piece racing forward across the board. Every square you advance earns a point, but danger is everywhere. The board is filled with opponent pieces standing in wait, each threatening the squares they can capture. One wrong move into their reach, and your run is over.</p>
+            <p class="about-text">Plan your path, read the board, and push your piece as far as possible. Simple to learn yet deeply tactical, Chess Run rewards sharp thinking, careful positioning, and the courage to keep moving forward.</p>
+            <p class="about-text">How far can you run?</p>
+          </div>
+          <div class="about-section">
+            <div class="about-subtitle">Contact</div>
+            <p class="about-text">For support or feedback, contact: <a href="mailto:chessrungame@gmail.com" style="color:#FFFFFF;">chessrungame@gmail.com</a></p>
+          </div>
+          <div class="about-section">
+            <div class="about-subtitle">Terms of Use</div>
+            <p class="about-text">Chess Run is provided "as is" for personal entertainment use. Optional in-app purchases (such as themes or ad removal) are processed securely through Google Play and are non-transferable. The developer makes no guarantees regarding uninterrupted operation and is not liable for any loss of data, progress, or device issues arising from use of the app. By using Chess Run, you agree to these terms.</p>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -967,6 +1006,10 @@
     function showSettings(){ document.getElementById("settings").classList.add("show"); }
     function hideSettings(){ document.getElementById("settings").classList.remove("show"); }
 
+    // About popup
+    function showAbout(){ document.getElementById("about").classList.add("show"); }
+    function hideAbout(){ document.getElementById("about").classList.remove("show"); }
+
     // Init
     init();
     function init(){
@@ -985,6 +1028,10 @@
       document.getElementById("settingsBtn").addEventListener("click", showSettings);
       document.getElementById("settingsBackdrop").addEventListener("click", hideSettings);
       document.getElementById("settingsSheet").addEventListener("click", hideSettings);
+
+      document.getElementById("aboutBtn").addEventListener("click", function(e){ e.stopPropagation(); hideSettings(); showAbout(); });
+      document.getElementById("aboutBackdrop").addEventListener("click", hideAbout);
+      document.getElementById("aboutSheet").addEventListener("click", hideAbout);
 
       // Tap-to-move
       $board.addEventListener("click", onBoardClick);
