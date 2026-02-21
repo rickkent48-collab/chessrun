@@ -423,6 +423,11 @@
     .theme-classic .piece svg circle,
     .theme-classic .piece svg path,
     .theme-classic .piece svg rect{ stroke: none !important; stroke-width: 0 !important; }
+    .about-title { color: var(--gold) !important; }
+    .about-subtitle{ color: var(--gold); font-weight: bold; display:block; margin-bottom:0.4em; }
+    .about-text{ color: #FFF; display:block; margin-bottom:1em; }
+    .about-list{ font-size:1em; line-height:1.38em; }
+    #aboutSheet{ z-index:1002; width:420px; max-width:96vw; max-height:99vw; padding:0 2vw 2vw 2vw; background: var(--black); border-radius:24px; border: 2px solid var(--gold); box-shadow:0 12px 40px 0 rgba(0,0,0,0.18); position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); }
   </style>
 </head>
 <body>
@@ -510,8 +515,37 @@
           <div class="stat-row" style="justify-content:center;">
             <button id="privacyPolicyBtn" class="play-btn" type="button">Privacy Policy</button>
           </div>
+          <div class="stat-blank">&nbsp;</div>
+          <div class="stat-row" style="justify-content:center;">
+            <button id="aboutBtn" class="play-btn" type="button">About</button>
+          </div>
         </div>
         <div class="stats-spacer"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="aboutSheet" class="stats-sheet" style="display:none;">
+    <div class="stats-inner">
+      <div id="aboutTitle" class="stats-title about-title">About</div>
+      <div class="stat-blank">&nbsp;</div>
+      <div class="stats-list about-list">
+        <div class="about-section">
+          <span class="about-subtitle">How To Play</span><br>
+          <span class="about-text">Chess Run is a modern twist on classic chess where survival depends on the moves you make.<br><br>
+In this minimalist challenge, you control a single chess piece racing forward across the board. Every square you advance earns a point, but danger is everywhere. The board is filled with opponent pieces standing in wait, each threatening the squares they can capture. One wrong move into their reach, and your run is over.<br>
+Plan your path, read the board, and push your piece as far as possible. Simple to learn yet deeply tactical, Chess Run rewards sharp thinking, careful positioning, and the courage to keep moving forward.<br><br>How far can you run?</span>
+        </div>
+        <div class="stat-blank">&nbsp;</div>
+        <div class="about-section">
+          <span class="about-subtitle">Contact</span><br>
+          <span class="about-text">For support or feedback, contact: chessrungame@gmail.com</span>
+        </div>
+        <div class="stat-blank">&nbsp;</div>
+        <div class="about-section">
+          <span class="about-subtitle">Terms of Use</span><br>
+          <span class="about-text">Chess Run is provided "as is" for personal entertainment use. Optional in-app purchases (such as themes or ad removal) are processed securely through Google Play and are non-transferable. The developer makes no guarantees regarding uninterrupted operation and is not liable for any loss of data, progress, or device issues arising from use of the app. By using Chess Run, you agree to these terms.</span>
+        </div>
       </div>
     </div>
   </div>
@@ -813,6 +847,19 @@
   document.getElementById('privacyPolicyBtn')?.addEventListener('click', function(){
     window.open('https://docs.google.com/document/d/e/2PACX-1vSEezHmS2ktPkFL3lIV4qE8GEhIB4UQ8tTna3uKeVoOUcedrId0luAVYjbJjkQEiHrZJXjbzDF3QGGk/pub', '_blank', 'noopener,noreferrer');
   });
+
+  const aboutBtn = document.getElementById('aboutBtn');
+  const aboutSheet = document.getElementById('aboutSheet');
+  const settingsSheet = document.getElementById('settingsSheet');
+  aboutBtn?.addEventListener('click', function(e){
+    e.stopPropagation();
+    settingsSheet.style.display = 'none';
+    aboutSheet.style.display = 'block';
+  });
+  aboutSheet?.addEventListener('click', function(){
+    aboutSheet.style.display = 'none';
+    settingsSheet.style.display = 'block';
+  });
   </script>
 
   <script>
@@ -965,7 +1012,13 @@
 
     // Settings popup
     function showSettings(){ document.getElementById("settings").classList.add("show"); }
-    function hideSettings(){ document.getElementById("settings").classList.remove("show"); }
+    function hideSettings(){
+      document.getElementById("settings").classList.remove("show");
+      const as = document.getElementById("aboutSheet");
+      if (as) as.style.display = 'none';
+      const ss = document.getElementById("settingsSheet");
+      if (ss) ss.style.display = 'block';
+    }
 
     // Init
     init();
