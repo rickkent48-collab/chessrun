@@ -510,6 +510,36 @@
           <div class="stat-row" style="justify-content:center;">
             <button id="privacyPolicyBtn" class="play-btn" type="button">Privacy Policy</button>
           </div>
+          <div class="stat-blank">&nbsp;</div>
+          <div class="stat-row" style="justify-content:center;">
+            <button id="aboutBtn" class="play-btn" type="button">About</button>
+          </div>
+        </div>
+        <div class="stats-spacer"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="aboutPopup" class="stats" role="dialog" aria-modal="true" style="display:none;">
+    <div id="aboutBackdrop" class="stats-backdrop" aria-hidden="true"></div>
+    <div id="aboutSheet" class="stats-sheet">
+      <div class="stats-inner">
+        <div class="stats-title" style="color:var(--gold);">About</div>
+        <div class="stats-spacer"></div>
+        <div class="stats-list">
+          <div class="stat-row">
+            <span style="color:var(--gold);font-weight:bold;">Contact</span>
+          </div>
+          <div class="stat-row">
+            <span style="color:#fff;">For support, feedback or business please contact: chessrungame@gmail.com</span>
+          </div>
+          <div class="stat-blank">&nbsp;</div>
+          <div class="stat-row">
+            <span style="color:var(--gold);font-weight:bold;">Terms of Use</span>
+          </div>
+          <div class="stat-row">
+            <span style="color:#fff;">Chess Run is provided "as is" for personal entertainment use. Optional in-app purchases (such as themes or ad removal) are processed securely through Google Play and are non-transferable. The developer makes no guarantees regarding uninterrupted operation and is not liable for any loss of data, progress, or device issues arising from use of the app. By using Chess Run, you agree to these terms.</span>
+          </div>
         </div>
         <div class="stats-spacer"></div>
       </div>
@@ -812,6 +842,23 @@
 
   document.getElementById('privacyPolicyBtn')?.addEventListener('click', function(){
     window.open('https://docs.google.com/document/d/e/2PACX-1vSEezHmS2ktPkFL3lIV4qE8GEhIB4UQ8tTna3uKeVoOUcedrId0luAVYjbJjkQEiHrZJXjbzDF3QGGk/pub', '_blank', 'noopener,noreferrer');
+  });
+
+  document.getElementById('aboutBtn')?.addEventListener('click', function(){
+    document.getElementById('aboutPopup').style.display = 'block';
+    document.getElementById('settings').classList.remove('show');
+  });
+  document.getElementById('aboutBackdrop')?.addEventListener('click', function(){
+    document.getElementById('aboutPopup').style.display = 'none';
+    document.getElementById('settings').classList.add('show');
+  });
+  document.getElementById('aboutSheet')?.addEventListener('click', function(){
+    document.getElementById('aboutPopup').style.display = 'none';
+    document.getElementById('settings').classList.add('show');
+  });
+  document.getElementById('menu')?.addEventListener('click', function(){
+    document.getElementById('aboutPopup').style.display = 'none';
+    document.getElementById('settings').classList.remove('show');
   });
   </script>
 
