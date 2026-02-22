@@ -263,6 +263,36 @@
       box-shadow:none !important;    /* remove any previous glow */
     }
 
+    /* About popup styles */
+    .about-modal .stats-title.about-gold {
+      color: var(--gold) !important;
+      font-weight: bold;
+      font-size: 1.2em;
+    }
+    .about-modal .about-subtitle.about-gold {
+      color: var(--gold) !important;
+      font-weight: bold;
+      margin: 12px 0 6px 0;
+      font-size: 1em;
+    }
+    .about-modal .about-text {
+      color: #fff !important;
+      font-size: 0.98em;
+      margin-top: 4px;
+      line-height: 1.34em;
+      text-align: left;
+    }
+    .about-modal .stats-sheet {
+      max-width: 400px;
+      min-width: 320px;
+      min-height: 260px;
+      margin: auto;
+    }
+    .about-modal .stats-list {
+      margin: 0 auto;
+      width: 96%;
+    }
+
     /* Classic theme variables and scoped overrides */
     .theme-classic{
       /* Board colors */
@@ -509,6 +539,34 @@
           <div class="stat-blank">&nbsp;</div>
           <div class="stat-row" style="justify-content:center;">
             <button id="privacyPolicyBtn" class="play-btn" type="button">Privacy Policy</button>
+          </div>
+          <div class="stat-blank">&nbsp;</div>
+          <div class="stat-row" style="justify-content:center;">
+            <button id="aboutBtn" class="play-btn" type="button">About</button>
+          </div>
+        </div>
+        <div class="stats-spacer"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="aboutModal" class="about-modal stats" role="dialog" aria-modal="true" aria-labelledby="aboutTitle" style="display:none;">
+    <div id="aboutBackdrop" class="stats-backdrop" aria-hidden="true"></div>
+    <div id="aboutSheet" class="stats-sheet">
+      <div class="stats-inner">
+        <div id="aboutTitle" class="stats-title about-gold">About</div>
+        <div class="stats-spacer"></div>
+        <div class="stats-list">
+          <div style="margin-top:8px;"></div>
+          <div class="about-subtitle about-gold">Contact</div>
+          <div class="about-text">For support, feedback or business please contact:<br/>chessrungame@gmail.com</div>
+          <div style="margin-top:16px;"></div>
+          <div class="about-subtitle about-gold">Terms of Use</div>
+          <div class="about-text">
+            Chess Run is provided "as is" for personal entertainment use.<br/><br/>
+            Optional in-app purchases (such as themes or ad removal) are processed securely through Google Play and are non-transferable.<br/><br/>
+            The developer makes no guarantees regarding uninterrupted operation and is not liable for any loss of data, progress, or device issues arising from use of the app.<br/><br/>
+            By using Chess Run, you agree to these terms.
           </div>
         </div>
         <div class="stats-spacer"></div>
@@ -813,6 +871,23 @@
   document.getElementById('privacyPolicyBtn')?.addEventListener('click', function(){
     window.open('https://docs.google.com/document/d/e/2PACX-1vSEezHmS2ktPkFL3lIV4qE8GEhIB4UQ8tTna3uKeVoOUcedrId0luAVYjbJjkQEiHrZJXjbzDF3QGGk/pub', '_blank', 'noopener,noreferrer');
   });
+
+  // Show About pop-up
+  document.getElementById('aboutBtn')?.addEventListener('click', function(){
+    document.getElementById('aboutModal').style.display = 'block';
+    document.getElementById('settings').classList.remove('show');
+  });
+
+  // Tapping About pop-up backdrop/sheet anywhere returns to settings
+  function hideAbout(){
+    document.getElementById('aboutModal').style.display = 'none';
+    document.getElementById('settings').classList.add('show');
+  }
+  document.getElementById('aboutBackdrop')?.addEventListener('click', hideAbout);
+  document.getElementById('aboutSheet')?.addEventListener('click', hideAbout);
+
+  // Prevent buttons in About pop-up from propagating clicks if added in future
+  document.querySelectorAll('#aboutModal button').forEach(btn => btn.addEventListener('click', e => e.stopPropagation()));
   </script>
 
   <script>
