@@ -510,8 +510,30 @@
           <div class="stat-row" style="justify-content:center;">
             <button id="privacyPolicyBtn" class="play-btn" type="button">Privacy Policy</button>
           </div>
+          <div class="stat-blank">&nbsp;</div>
+          <div class="stat-row" style="justify-content:center;">
+            <button id="aboutBtn" class="play-btn" type="button">About</button>
+          </div>
         </div>
         <div class="stats-spacer"></div>
+      </div>
+    </div>
+    <div id="aboutSheet" class="stats-sheet" style="display:none">
+      <div class="stats-inner" style="padding:12px;">
+        <div class="about-title" style="color:#EFBF04;text-align:center;font-weight:600;font-size:20px;margin-bottom:6px;">About</div>
+        <div class="about-section" style="margin-bottom:10px;">
+          <span class="about-subtitle" style="color:#EFBF04;font-size:14px;font-weight:600;">Contact</span><br>
+          <span style="color:#FFF;font-size:11px;font-weight:400;">For support, feedback or business please contact: chessrungame@gmail.com</span>
+        </div>
+        <div class="about-section">
+          <span class="about-subtitle" style="color:#EFBF04;font-size:14px;font-weight:600;">Terms of Use</span><br>
+          <span style="color:#FFF;font-size:11px;line-height:1.35;font-weight:400;">
+            Chess Run is provided "as is" for personal entertainment use.<br>
+            Optional in-app purchases (such as themes or ad removal) are processed securely through Google Play and are non-transferable.<br>
+            The developer makes no guarantees regarding uninterrupted operation and is not liable for any loss of data, progress, or device issues arising from use of the app.<br>
+            By using Chess Run, you agree to these terms.
+          </span>
+        </div>
       </div>
     </div>
   </div>
@@ -813,6 +835,22 @@
   document.getElementById('privacyPolicyBtn')?.addEventListener('click', function(){
     window.open('https://docs.google.com/document/d/e/2PACX-1vSEezHmS2ktPkFL3lIV4qE8GEhIB4UQ8tTna3uKeVoOUcedrId0luAVYjbJjkQEiHrZJXjbzDF3QGGk/pub', '_blank', 'noopener,noreferrer');
   });
+
+  // Show About pop-up on About button click
+  document.getElementById('aboutBtn')?.addEventListener('click', function(e){
+    e.stopPropagation(); // Prevent event bubbling to avoid closing the settings dialog
+    document.getElementById('aboutSheet').style.display = 'block';
+    document.getElementById('settingsSheet').style.display = 'none';
+  });
+  // Tap anywhere on About pop-up returns to settings
+  document.getElementById('aboutSheet')?.addEventListener('click', function(){
+    this.style.display = 'none';
+    document.getElementById('settingsSheet').style.display = 'block';
+  });
+  // If menu is open above stats sheets, tapping menu dismisses the settings overlay
+  document.getElementById('menu')?.addEventListener('click', function(){
+    if (typeof hideSettings === 'function') hideSettings();
+  });
   </script>
 
   <script>
@@ -965,7 +1003,11 @@
 
     // Settings popup
     function showSettings(){ document.getElementById("settings").classList.add("show"); }
-    function hideSettings(){ document.getElementById("settings").classList.remove("show"); }
+    function hideSettings(){
+      document.getElementById("settings").classList.remove("show");
+      document.getElementById("aboutSheet").style.display = 'none';
+      document.getElementById("settingsSheet").style.display = '';
+    }
 
     // Init
     init();
