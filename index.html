@@ -251,6 +251,10 @@
     /* Blank line entries */
     .stat-blank{ height: 1em; font-size: clamp(16px, 4.5vw, 20px); line-height: 1; }
     
+    /* About popup: allow sheet to size to content */
+    #about .stats-sheet{ height: auto; max-height: 80vh; overflow-y: auto; }
+    #about .stats-inner{ position: relative; top: auto; left: auto; right: auto; bottom: auto; overflow-y: visible; }
+
     /* Row color utilities */
     .stat-white{ color: #FFFFFF; }
     .stat-gold{  color: var(--gold); }
@@ -510,6 +514,10 @@
           <div class="stat-row" style="justify-content:center;">
             <button id="privacyPolicyBtn" class="play-btn" type="button">Privacy Policy</button>
           </div>
+          <div class="stat-blank">&nbsp;</div>
+          <div class="stat-row" style="justify-content:center;">
+            <button id="aboutBtn" class="play-btn" type="button">About</button>
+          </div>
         </div>
         <div class="stats-spacer"></div>
       </div>
@@ -566,6 +574,27 @@
           <div class="stat-row" style="justify-content:center;">
             <button id="themeNeonBtn" class="play-btn" type="button">Neon</button>
           </div>
+        </div>
+        <div class="stats-spacer"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="about" class="stats" role="dialog" aria-modal="true" aria-labelledby="aboutTitle">
+    <div id="aboutBackdrop" class="stats-backdrop" aria-hidden="true"></div>
+    <div id="aboutSheet" class="stats-sheet">
+      <div class="stats-inner">
+        <div id="aboutTitle" class="stats-title stat-gold">About</div>
+        <div class="stats-spacer"></div>
+        <div class="stats-list">
+          <div class="stat-row stat-gold" style="justify-content:center; font-weight:700;">Contact</div>
+          <div class="stat-blank">&nbsp;</div>
+          <div class="stat-row stat-white" style="justify-content:center; text-align:center; font-size:clamp(13px,3.5vw,16px); line-height:1.4;">For support, feedback or business please contact: chessrungame@gmail.com</div>
+          <div class="stat-blank">&nbsp;</div>
+          <div class="stat-blank">&nbsp;</div>
+          <div class="stat-row stat-gold" style="justify-content:center; font-weight:700;">Terms of Use</div>
+          <div class="stat-blank">&nbsp;</div>
+          <div class="stat-row stat-white" style="justify-content:center; text-align:center; font-size:clamp(13px,3.5vw,16px); line-height:1.4;">Chess Run is provided &ldquo;as is&rdquo; for personal entertainment use. Optional in-app purchases (such as themes or ad removal) are processed securely through Google Play and are non-transferable. The developer makes no guarantees regarding uninterrupted operation and is not liable for any loss of data, progress, or device issues arising from use of the app. By using Chess Run, you agree to these terms.</div>
         </div>
         <div class="stats-spacer"></div>
       </div>
@@ -813,6 +842,30 @@
   document.getElementById('privacyPolicyBtn')?.addEventListener('click', function(){
     window.open('https://docs.google.com/document/d/e/2PACX-1vSEezHmS2ktPkFL3lIV4qE8GEhIB4UQ8tTna3uKeVoOUcedrId0luAVYjbJjkQEiHrZJXjbzDF3QGGk/pub', '_blank', 'noopener,noreferrer');
   });
+
+  // About popup
+  function showAbout(){ document.getElementById('about').classList.add('show'); }
+  function hideAbout(){ document.getElementById('about').classList.remove('show'); }
+
+  document.getElementById('aboutBtn')?.addEventListener('click', function(e){
+    e.stopPropagation();
+    hideSettings();
+    showAbout();
+  });
+
+  // Tapping the overlay above About closes everything and returns to main menu
+  document.getElementById('aboutBackdrop')?.addEventListener('click', function(){
+    hideAbout();
+  });
+
+  // Tapping the About sheet (not overlay) returns to settings
+  document.getElementById('aboutSheet')?.addEventListener('click', function(){
+    hideAbout();
+    showSettings();
+  });
+
+  // Prevent clicks inside the inner content from closing the sheet
+  document.querySelector('#about .stats-inner')?.addEventListener('click', function(e){ e.stopPropagation(); });
   </script>
 
   <script>
