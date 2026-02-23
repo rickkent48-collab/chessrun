@@ -510,6 +510,10 @@
           <div class="stat-row" style="justify-content:center;">
             <button id="privacyPolicyBtn" class="play-btn" type="button">Privacy Policy</button>
           </div>
+          <div class="stat-blank">&nbsp;</div>
+          <div class="stat-row" style="justify-content:center;">
+            <button id="aboutBtn" class="play-btn" type="button">About</button>
+          </div>
         </div>
         <div class="stats-spacer"></div>
       </div>
@@ -566,6 +570,24 @@
           <div class="stat-row" style="justify-content:center;">
             <button id="themeNeonBtn" class="play-btn" type="button">Neon</button>
           </div>
+        </div>
+        <div class="stats-spacer"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="about" class="stats" role="dialog" aria-modal="true" aria-labelledby="aboutTitle">
+    <div id="aboutBackdrop" class="stats-backdrop" aria-hidden="true"></div>
+    <div id="aboutSheet" class="stats-sheet">
+      <div class="stats-inner">
+        <div id="aboutTitle" class="stats-title">About</div>
+        <div class="stats-spacer"></div>
+        <div class="stats-list">
+          <div class="stat-row stat-gold" style="font-weight:800;">Contact</div>
+          <div class="stat-row stat-white" style="font-size:clamp(13px,3.5vw,15px);line-height:1.35;">For support or feedback, contact: <a href="mailto:chessrungame@gmail.com" style="color:#ffffff;">chessrungame@gmail.com</a></div>
+          <div class="stat-blank">&nbsp;</div>
+          <div class="stat-row stat-gold" style="font-weight:800;">Terms of Use</div>
+          <div class="stat-row stat-white" style="font-size:clamp(13px,3.5vw,15px);line-height:1.35;">Chess Run is provided "as is" for personal entertainment use. Optional in-app purchases (such as themes or ad removal) are processed securely through Google Play and are non-transferable. The developer makes no guarantees regarding uninterrupted operation and is not liable for any loss of data, progress, or device issues arising from use of the app. By using Chess Run, you agree to these terms.</div>
         </div>
         <div class="stats-spacer"></div>
       </div>
@@ -812,6 +834,23 @@
 
   document.getElementById('privacyPolicyBtn')?.addEventListener('click', function(){
     window.open('https://docs.google.com/document/d/e/2PACX-1vSEezHmS2ktPkFL3lIV4qE8GEhIB4UQ8tTna3uKeVoOUcedrId0luAVYjbJjkQEiHrZJXjbzDF3QGGk/pub', '_blank', 'noopener,noreferrer');
+  });
+
+  // About panel
+  function showAbout(){ document.getElementById('about').classList.add('show'); }
+  function hideAbout(){ document.getElementById('about').classList.remove('show'); }
+  document.getElementById('aboutBtn')?.addEventListener('click', function(e){
+    e.stopPropagation();
+    hideSettings();
+    showAbout();
+  });
+  document.getElementById('aboutBackdrop')?.addEventListener('click', function(){
+    hideAbout();
+    showMenu();
+  });
+  document.getElementById('aboutSheet')?.addEventListener('click', function(){
+    hideAbout();
+    showSettings();
   });
   </script>
 
