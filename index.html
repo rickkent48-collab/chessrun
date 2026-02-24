@@ -1102,11 +1102,18 @@
     }
 
     // --------------------- Generation with validation ---------------------
-    // Reject segments that place a rook directly ahead of a pawn at start
+    // Reject segments that place a rook with a clear same-column line of sight to the pawn at start
     function forbidFrontRookForPawn(){
       if (player.type !== "P") return true;
-      const ahead = board[1]?.[player.col] || null;
-      return !(ahead && ahead.color === BLACK && ahead.type === "R");
+      const col = player.col;
+      for (let r = 1; r < BOARD_ROWS; r++){
+        const cell = board[r]?.[col];
+        if (!cell) continue; // empty square, keep scanning
+        // First non-empty cell in the column: if it's a black rook, it has a clear line of sight
+        if (cell.color === BLACK && cell.type === "r") return false;
+        break; // a non-rook piece blocks the column, no rook threat
+      }
+      return true;
     }
 
     function generateValidSegment(){
@@ -1167,6 +1174,7 @@
         if (player.type === "P"){
           restrictFirstOppositionInAdjacentColumns(protectedSquares);
           enforceMandatoryAdjacentRook(protectedSquares);
+          addPawnBoardDifficulty(protectedSquares);
         }
 
         const res = bfsSafePath(board, player.type);
@@ -1186,6 +1194,7 @@
       if (player.type === "P"){
         enforceMandatoryAdjacentRook(new Set());
         ensureTwoPawnDecisionEvents(new Set());
+        addPawnBoardDifficulty(new Set());
       }
       enforceOppositionCountRange(minOpp, maxOpp, new Set());
     }
@@ -1510,6 +1519,62 @@
             placed = true; break;
           }
           if (placed) break;
+        }
+      }
+    }
+
+    // Increase pawn-board difficulty: extra column obstacles + extra capture opportunities
+    function addPawnBoardDifficulty(protectedSquares){
+      if (player.type !== "P") return;
+      const col = player.col;
+      const stage = currentStage();
+      const nearWeights = OPP_WEIGHTS.near[stage];
+
+      // 1. Place 1-2 extra blocking pieces in the pawn's starting column at non-path rows
+      const colRows = [];
+      for (let r = 1; r <= TOP_ROW - 2; r++){
+        if (!board[r][col] && !protectedSquares.has(keyOf(r, col))) colRows.push(r);
+      }
+      shuffle(colRows);
+      let obstaclesAdded = 0;
+      for (const r of colRows){
+        if (obstaclesAdded >= 2) break;
+        const t = pickFromSubset(nearWeights, ["n","b"]);
+        board[r][col] = { color: BLACK, type: t };
+        if (attacksAnyProtected(r, col, t, protectedSquares)){
+          board[r][col] = null; continue;
+        }
+        const res = bfsSafePath(board, player.type);
+        if (res && res.path && res.path.length) obstaclesAdded++;
+        else board[r][col] = null;
+      }
+
+      // 2. Add 1-2 extra capturable pieces at diagonal positions along the current path
+      const pathRes = bfsSafePath(board, player.type);
+      if (!pathRes || !pathRes.path || pathRes.path.length < 2) return;
+      let extraCaptures = 0;
+      for (let i = 1; i < pathRes.path.length && extraCaptures < 2; i++){
+        const prev = pathRes.path[i-1];
+        const curr = pathRes.path[i];
+        if (!(curr.r === prev.r + 1 && curr.c === prev.c && curr.r < TOP_ROW)) continue;
+        const dirs = shuffleCopy([-1, +1]);
+        for (const dc of dirs){
+          const tc = curr.c + dc;
+          if (!inBounds(curr.r, tc) || board[curr.r][tc]) continue;
+          const ek = keyOf(curr.r, tc);
+          if (protectedSquares.has(ek)) continue;
+          const tType = pickFromSubset(nearWeights, ["n","b","p"]);
+          board[curr.r][tc] = { color: BLACK, type: tType };
+          if (attacksAnyProtected(curr.r, tc, tType, protectedSquares)){
+            board[curr.r][tc] = null; continue;
+          }
+          pruneAttackersForCaptureLanding(prev.r, prev.c, curr.r, tc);
+          if (!landingSafeAfterSimulatedCapture(prev.r, prev.c, curr.r, tc)){
+            board[curr.r][tc] = null; continue;
+          }
+          const res2 = bfsSafePath(board, player.type);
+          if (res2 && res2.path && res2.path.length){ extraCaptures++; break; }
+          else board[curr.r][tc] = null;
         }
       }
     }
