@@ -1106,7 +1106,7 @@
     function forbidFrontRookForPawn(){
       if (player.type !== "P") return true;
       const ahead = board[1]?.[player.col] || null;
-      return !(ahead && ahead.color === BLACK && ahead.type === "R");
+      return !(ahead && ahead.color === BLACK && ahead.type === "r");
     }
 
     function generateValidSegment(){
@@ -1547,6 +1547,46 @@
               if (blackAttacksSquare(t, r, c, pr, pc)){ attacksPath = true; break; }
             }
             if (attacksPath){ board[r][c] = null; }
+          }
+        }
+
+        // Extra passes for pawn boards to increase difficulty
+        if (player.type === "P") {
+          // 2a: Increase obstacle density in pawn's starting column
+          for (let r = 2; r <= TOP_ROW - 1; r++) {
+            const k = keyOf(r, player.col);
+            if (pathSet.has(k)) continue;
+            if (board[r][player.col]) continue;
+            if (Math.random() > 0.82) continue;
+            const t = Math.random() < 0.55 ? "r" : "n";
+            board[r][player.col] = { color: BLACK, type: t };
+            let attacksPath = false;
+            for (const pk of pathSet) {
+              const [pr, pc] = pk.split(",").map(Number);
+              if (blackAttacksSquare(t, r, player.col, pr, pc)) { attacksPath = true; break; }
+            }
+            if (attacksPath) { board[r][player.col] = null; }
+          }
+          // 2b: Add more diagonal capture opportunities adjacent to path squares
+          for (const sq of res.path) {
+            if (sq.r >= TOP_ROW) continue;
+            for (const dc of [-1, +1]) {
+              const diagC = sq.c + dc;
+              const diagR = sq.r + 1;
+              if (!inBounds(diagR, diagC)) continue;
+              if (pathSet.has(keyOf(diagR, diagC))) continue;
+              if (board[diagR][diagC]) continue;
+              if (Math.random() > 0.45) continue;
+              const nearWeights = OPP_WEIGHTS.near[stage];
+              const t = pickFromSubset(nearWeights, ["n","r","b","p"]);
+              board[diagR][diagC] = { color: BLACK, type: t };
+              let attacksPath = false;
+              for (const pk of pathSet) {
+                const [pr, pc] = pk.split(",").map(Number);
+                if (blackAttacksSquare(t, diagR, diagC, pr, pc)) { attacksPath = true; break; }
+              }
+              if (attacksPath) { board[diagR][diagC] = null; }
+            }
           }
         }
 
