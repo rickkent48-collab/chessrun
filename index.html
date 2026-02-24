@@ -931,15 +931,15 @@
     };
 
     const OPP_COUNTS = [
-      [14, 22],   // Pawn
-      [16, 24],   // King
-      [18, 26],   // Knight
-      [20, 28],   // Bishop
-      [22, 30],   // Rook
-      [24, 32],   // Queen
+      [20, 28],   // Pawn
+      [22, 30],   // King
+      [24, 32],   // Knight
+      [26, 34],   // Bishop
+      [28, 36],   // Rook
+      [30, 38],   // Queen
     ];
 
-    const CONSTRICTION = [0.65, 0.75, 0.83, 0.89, 0.93, 0.97];
+    const CONSTRICTION = [0.80, 0.88, 0.93, 0.96, 0.98, 0.99];
 
     function currentStage(){ return STAGE_INDEX[player.type] ?? 0; }
 
@@ -1081,7 +1081,7 @@
     // New game setup
     function resetBoardForNewGame(){
       let tries = 0;
-      while (tries < 80){
+      while (tries < 100){
         board = createEmptyBoard();
         player.col = chooseSafeStartingColumn();
         player.row = 0;
@@ -1214,13 +1214,14 @@
       }
       r += firstAdvance;
 
-      const switchRow = randInt(2, Math.min(7, TOP_ROW-2));
-      let didSwitch = false;
+      const switchRow1 = randInt(2, Math.min(5, TOP_ROW-4));
+      const switchRow2 = randInt(switchRow1 + 3, Math.min(9, TOP_ROW-1));
+      let switchesDone = 0;
 
       while (r < TOP_ROW){
         const nextR = r + 1;
 
-        if (nextR === switchRow){
+        if (nextR === switchRow1 || nextR === switchRow2){
           const dir = (c === 0) ? +1 : (c === BOARD_COLS-1) ? -1 : (Math.random() < 0.5 ? -1 : +1);
           const targetC = c + dir;
 
@@ -1239,11 +1240,11 @@
               pruneAttackersForCaptureLanding(r, c, nextR, altC);
               if (!landingSafeAfterSimulatedCapture(r, c, nextR, altC)) return false;
               protectedSquares.add(keyOf(nextR, altC));
-              r = nextR; c = altC; didSwitch = true; continue;
+              r = nextR; c = altC; switchesDone++; continue;
             } else { return false; }
           }
           protectedSquares.add(keyOf(nextR, targetC));
-          r = nextR; c = targetC; didSwitch = true; continue;
+          r = nextR; c = targetC; switchesDone++; continue;
         }
 
         let moved = false;
@@ -1281,7 +1282,7 @@
           r = nextR;
         }
       }
-      return didSwitch;
+      return switchesDone >= 2;
     }
 
     function ensureTwoPawnDecisionEvents(protectedSquares){
