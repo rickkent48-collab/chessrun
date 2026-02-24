@@ -931,15 +931,15 @@
     };
 
     const OPP_COUNTS = [
-      [14, 22],   // Pawn
-      [16, 24],   // King
-      [18, 26],   // Knight
-      [20, 28],   // Bishop
-      [22, 30],   // Rook
-      [24, 32],   // Queen
+      [18, 26],   // Pawn
+      [20, 28],   // King
+      [22, 31],   // Knight
+      [24, 33],   // Bishop
+      [26, 35],   // Rook
+      [28, 37],   // Queen
     ];
 
-    const CONSTRICTION = [0.65, 0.75, 0.83, 0.89, 0.93, 0.97];
+    const CONSTRICTION = [0.80, 0.88, 0.93, 0.96, 0.98, 0.99];
 
     function currentStage(){ return STAGE_INDEX[player.type] ?? 0; }
 
@@ -1117,23 +1117,35 @@
     }
 
     function generateValidSegment(){
-      mandatoryRookKeys = new Set();
-      generatePuzzleSegment();
-      guardStartSquare();
+      const savedCol = player.col;
+      let bestBoard = null;
+      let bestMandatory = null;
+      let bestPathLen = -1;
 
-      // New constraint: avoid rook directly in front of player pawn
-      if (!forbidFrontRookForPawn()){
-        return false;
+      for (let attempt = 0; attempt < 2; attempt++){
+        player.col = savedCol;
+        mandatoryRookKeys = new Set();
+        generatePuzzleSegment();
+        guardStartSquare();
+
+        if (!forbidFrontRookForPawn()) continue;
+        if (!hasSafeFirstMoveFromStart()) continue;
+        if (!constrictAlternatesUsingPath()) continue;
+
+        const res = bfsSafePath(board, player.type);
+        if (res && res.path && res.path.length > 0 && res.path.length > bestPathLen){
+          bestPathLen = res.path.length;
+          bestBoard = cloneBoard(board);
+          bestMandatory = new Set(mandatoryRookKeys);
+        }
       }
 
-      if (!hasSafeFirstMoveFromStart()){
-        return false;
+      if (bestBoard){
+        board = bestBoard;
+        mandatoryRookKeys = bestMandatory;
+        return true;
       }
-
-      if (!constrictAlternatesUsingPath()) return false;
-
-      const res = bfsSafePath(board, player.type);
-      return !!(res && res.path && res.path.length);
+      return false;
     }
 
     function hasSafeFirstMoveFromStart(){
@@ -1214,13 +1226,30 @@
       }
       r += firstAdvance;
 
-      const switchRow = randInt(2, Math.min(7, TOP_ROW-2));
+      // Pick 2 or 3 (both inclusive) evenly-spread forced-switch rows for a zig-zag path
+      const numSwitches = randInt(2, 3);
+      const firstSwitch = r + 2;
+      const lastSwitch = TOP_ROW - 2;
+      const switchRows = new Set();
+      const available = lastSwitch - firstSwitch + 1;
+      if (available >= numSwitches) {
+        // Divide the row span into numSwitches non-overlapping segments; pick one row per segment.
+        // Segments never overlap, so duplicate rows cannot occur.
+        const seg = Math.floor(available / numSwitches);
+        for (let si = 0; si < numSwitches; si++) {
+          const lo = firstSwitch + si * seg;
+          const hi = (si === numSwitches - 1) ? lastSwitch : lo + seg - 1;
+          switchRows.add(randInt(lo, hi));
+        }
+      } else if (available >= 1) {
+        switchRows.add(randInt(firstSwitch, lastSwitch));
+      }
       let didSwitch = false;
 
       while (r < TOP_ROW){
         const nextR = r + 1;
 
-        if (nextR === switchRow){
+        if (switchRows.has(nextR)){
           const dir = (c === 0) ? +1 : (c === BOARD_COLS-1) ? -1 : (Math.random() < 0.5 ? -1 : +1);
           const targetC = c + dir;
 
