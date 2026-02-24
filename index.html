@@ -913,33 +913,33 @@
 
     const OPP_WEIGHTS = {
       near: [
-        { p:0.38, k:0.24, n:0.20, b:0.10, r:0.07, q:0.01 }, // Pawn
-        { p:0.34, k:0.22, n:0.20, b:0.12, r:0.08, q:0.04 }, // King
-        { p:0.30, k:0.20, n:0.18, b:0.15, r:0.12, q:0.05 }, // Knight
-        { p:0.26, k:0.18, n:0.16, b:0.18, r:0.16, q:0.06 }, // Bishop
-        { p:0.22, k:0.16, n:0.16, b:0.20, r:0.18, q:0.08 }, // Rook
-        { p:0.18, k:0.14, n:0.14, b:0.22, r:0.20, q:0.12 }, // Queen
+        { p:0.28, k:0.20, n:0.22, b:0.12, r:0.14, q:0.04 }, // Pawn
+        { p:0.24, k:0.18, n:0.20, b:0.15, r:0.17, q:0.06 }, // King
+        { p:0.20, k:0.15, n:0.17, b:0.18, r:0.21, q:0.09 }, // Knight
+        { p:0.16, k:0.12, n:0.14, b:0.22, r:0.25, q:0.11 }, // Bishop
+        { p:0.12, k:0.10, n:0.12, b:0.24, r:0.27, q:0.15 }, // Rook
+        { p:0.08, k:0.08, n:0.10, b:0.26, r:0.28, q:0.20 }, // Queen
       ],
       far: [
-        { p:0.34, k:0.22, n:0.18, b:0.12, r:0.10, q:0.04 }, // Pawn
-        { p:0.30, k:0.20, n:0.18, b:0.16, r:0.14, q:0.02 }, // King
-        { p:0.28, k:0.18, n:0.16, b:0.18, r:0.16, q:0.04 }, // Knight
-        { p:0.24, k:0.16, n:0.15, b:0.20, r:0.18, q:0.07 }, // Bishop
-        { p:0.22, k:0.14, n:0.14, b:0.22, r:0.20, q:0.08 }, // Rook
-        { p:0.18, k:0.12, n:0.12, b:0.24, r:0.22, q:0.12 }, // Queen
+        { p:0.24, k:0.17, n:0.20, b:0.16, r:0.18, q:0.05 }, // Pawn
+        { p:0.20, k:0.15, n:0.18, b:0.18, r:0.22, q:0.07 }, // King
+        { p:0.17, k:0.13, n:0.15, b:0.21, r:0.25, q:0.09 }, // Knight
+        { p:0.14, k:0.11, n:0.12, b:0.23, r:0.27, q:0.13 }, // Bishop
+        { p:0.12, k:0.09, n:0.10, b:0.25, r:0.28, q:0.16 }, // Rook
+        { p:0.08, k:0.07, n:0.09, b:0.26, r:0.29, q:0.21 }, // Queen
       ]
     };
 
     const OPP_COUNTS = [
-      [10, 16],   // Pawn
-      [12, 18],   // King
-      [14, 20],   // Knight
-      [15, 22],   // Bishop
-      [16, 24],   // Rook
-      [18, 26],   // Queen
+      [14, 22],   // Pawn
+      [16, 24],   // King
+      [18, 26],   // Knight
+      [20, 28],   // Bishop
+      [22, 30],   // Rook
+      [24, 32],   // Queen
     ];
 
-    const CONSTRICTION = [0.35, 0.5, 0.6, 0.7, 0.8, 0.85];
+    const CONSTRICTION = [0.65, 0.75, 0.83, 0.89, 0.93, 0.97];
 
     function currentStage(){ return STAGE_INDEX[player.type] ?? 0; }
 
@@ -1552,23 +1552,11 @@
 
         enforceOppositionCountRange(minOpp, maxOpp, pathSet);
 
-        // New: limit safe channels to 2 or 3 while preserving the truth path
-        const initialChannels = Math.random() < 0.5 ? 2 : 3;
-        pruneSafeChannels(initialChannels, pathSet);
+        // Limit safe channels to 1 for maximum difficulty while preserving the truth path
+        pruneSafeChannels(1, pathSet);
 
         const res2 = bfsSafePath(board, player.type);
         if (res2 && res2.path && res2.path.length){
-          // Optional: if we started with 3 channels, try pruning to 2 for increased difficulty
-          if (initialChannels === 3 && Math.random() < 0.5){ 
-            const beforeSecondary = cloneBoard(board);
-            pruneSafeChannels(2, pathSet); 
-            const res3 = bfsSafePath(board, player.type);
-            if (res3 && res3.path && res3.path.length){ 
-              return true; // Successfully pruned to 2 channels
-            }
-            // Secondary pruning removed the path, revert to 3-channel board
-            board = beforeSecondary;
-          }
           return true;
         }
         // revert and reduce intensity, retry
