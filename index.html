@@ -423,6 +423,38 @@
     .theme-classic .piece svg circle,
     .theme-classic .piece svg path,
     .theme-classic .piece svg rect{ stroke: none !important; stroke-width: 0 !important; }
+
+    /* Remove Ads button: shown only in Classic theme, absolutely centered between Menu and Restart */
+    .controls{ position: relative; }
+    #removeAdsBtn{ display: none; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); color: #ffffff !important; }
+    .theme-classic #removeAdsBtn{ display: inline-block; }
+
+    /* Remove Ads panel overlay */
+    .remove-ads-panel{
+      position: fixed; inset: 0; display: none; z-index: 75;
+      background: var(--black);
+      border: var(--accent-w) solid var(--gold);
+      border-radius: var(--sheet-radius);
+      box-sizing: border-box;
+    }
+    .remove-ads-panel.show{
+      display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+      padding: 20px 18px 18px;
+    }
+    .remove-ads-panel-title{
+      font-size: clamp(28px, 9vw, 52px); font-weight: 900; letter-spacing: 1px;
+      color: var(--gold); font-family: "Boogaloo", system-ui; text-align: center;
+    }
+    .remove-ads-center{
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 16px; flex: 1; width: 100%;
+    }
+    .remove-ads-list{
+      color: #ffffff; font-family: "Boogaloo", system-ui;
+      font-size: clamp(15px, 4.2vw, 20px); text-align: left; line-height: 1.8;
+    }
+    .remove-ads-previews{ display: flex; gap: 10px; justify-content: center; align-items: flex-start; }
+    .remove-ads-previews canvas{ border-radius: 6px; display: block; }
   </style>
 </head>
 <body>
@@ -444,6 +476,7 @@
 
     <div class="controls">
       <button id="menuBtn" type="button">Menu</button>
+      <button id="removeAdsBtn" type="button">Remove Ads</button>
       <button id="restartBtn" type="button">Restart</button>
     </div>
   </div>
@@ -2448,5 +2481,96 @@
       return false;
     }
   </script>
+  <!-- Remove Ads overlay -->
+  <div id="removeAdsPanel" class="remove-ads-panel" role="dialog" aria-modal="true">
+    <div class="remove-ads-panel-title">Remove Ads</div>
+    <div class="remove-ads-center">
+      <div class="remove-ads-list">
+        <div>- Remove all ads</div>
+        <div>- Unlock three new themes</div>
+        <div>- Vintage</div>
+        <div>- Ocean</div>
+        <div>- Neon</div>
+      </div>
+      <div class="remove-ads-previews">
+        <canvas id="vintagePreview"></canvas>
+        <canvas id="oceanPreview"></canvas>
+        <canvas id="neonPreview"></canvas>
+      </div>
+    </div>
+    <button id="removeAdsPriceBtn" class="play-btn" type="button">0.99</button>
+  </div>
+
+  <script>
+  (function(){
+    function showRemoveAds(){
+      document.getElementById('removeAdsPanel').classList.add('show');
+      drawThemePreviews();
+    }
+    function hideRemoveAds(){
+      document.getElementById('removeAdsPanel').classList.remove('show');
+    }
+
+    document.getElementById('removeAdsBtn').addEventListener('click', showRemoveAds);
+
+    document.getElementById('removeAdsPanel').addEventListener('click', function(e){
+      if (!document.getElementById('removeAdsPriceBtn').contains(e.target)){
+        hideRemoveAds();
+      }
+    });
+
+    document.getElementById('removeAdsPriceBtn').addEventListener('click', function(e){
+      e.stopPropagation();
+    });
+
+    function drawBoardPreview(canvas, lightColor, darkColor, pieceColor, oppColor){
+      var W = canvas.width, H = canvas.height;
+      var ctx = canvas.getContext('2d');
+      var cols = 8, rows = Math.round(H / (W / cols));
+      var sq = W / cols;
+      for (var r = 0; r < rows; r++){
+        for (var c = 0; c < cols; c++){
+          ctx.fillStyle = ((r + c) % 2 === 0) ? lightColor : darkColor;
+          ctx.fillRect(c * sq, r * sq, sq, sq);
+        }
+      }
+      var pieces = ['\u265C','\u265E','\u265D','\u265B','\u265A','\u265D','\u265E','\u265C'];
+      var fontSize = sq * 0.65;
+      ctx.font = fontSize + 'px serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = oppColor;
+      for (var c2 = 0; c2 < cols; c2++){
+        ctx.fillText(pieces[c2], (c2 + 0.5) * sq, sq * 0.55);
+      }
+      ctx.fillStyle = oppColor;
+      for (var c3 = 0; c3 < cols; c3++){
+        ctx.fillText('\u265F', (c3 + 0.5) * sq, sq * 1.55);
+      }
+      ctx.fillStyle = pieceColor;
+      ctx.fillText('\u2659', (cols / 2 - 0.5) * sq, (rows - 0.5) * sq);
+    }
+
+    function drawThemePreviews(){
+      var canvasW = Math.floor((window.innerWidth - 56) / 3);
+      var canvasH = Math.floor(canvasW * 1.2);
+      var configs = [
+        { id: 'vintagePreview', light: '#E6D0A8', dark: '#7B5E3B', piece: '#FFFFFF', opp: '#020102' },
+        { id: 'oceanPreview',   light: '#007FFF', dark: '#00008B', piece: '#FFFFFF', opp: '#00F0FF' },
+        { id: 'neonPreview',    light: '#00E5FF', dark: '#8A00FF', piece: '#FFF01F', opp: '#FF6A00' }
+      ];
+      configs.forEach(function(cfg){
+        var canvas = document.getElementById(cfg.id);
+        if (!canvas) return;
+        canvas.width = canvasW;
+        canvas.height = canvasH;
+        canvas.style.width = canvasW + 'px';
+        canvas.style.height = canvasH + 'px';
+        drawBoardPreview(canvas, cfg.light, cfg.dark, cfg.piece, cfg.opp);
+      });
+    }
+  })();
+  </script>
+
 </body>
         </html>
