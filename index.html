@@ -423,6 +423,44 @@
     .theme-classic .piece svg circle,
     .theme-classic .piece svg path,
     .theme-classic .piece svg rect{ stroke: none !important; stroke-width: 0 !important; }
+
+    /* Remove Ads button: only visible on Classic theme game screen */
+    #removeAdsBtn{ display: none; }
+    .theme-classic #removeAdsBtn{ display: inline; }
+
+    /* Remove Ads overlay */
+    #removeAdsOverlay{
+      position: fixed; inset: 0; display: none; z-index: 85;
+      background: var(--black);
+      border: var(--accent-w) solid var(--gold);
+      border-radius: var(--sheet-radius);
+      box-sizing: border-box;
+      flex-direction: column; align-items: center;
+      overflow-y: auto;
+      padding: 24px 20px 24px;
+      gap: 20px;
+      font-family: "Boogaloo", system-ui;
+    }
+    #removeAdsOverlay.show{ display: flex; }
+    #removeAdsOverlay .removeads-title{
+      font-size: clamp(24px, 8vw, 40px); font-weight: 800;
+      color: var(--gold); text-align: center;
+      pointer-events: none;
+    }
+    #removeAdsOverlay .removeads-text{
+      color: #FFFFFF;
+      font-size: clamp(16px, 4.5vw, 20px);
+      text-align: center; line-height: 1.8;
+      pointer-events: none;
+    }
+    #removeAdsOverlay .removeads-screenshot{
+      width: 90%; border-radius: 12px;
+      border: 2px solid var(--gold);
+      aspect-ratio: 9 / 16;
+      display: flex; align-items: center; justify-content: center;
+      color: #FFFFFF; font-size: clamp(16px, 4.5vw, 20px);
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
@@ -444,6 +482,7 @@
 
     <div class="controls">
       <button id="menuBtn" type="button">Menu</button>
+      <button id="removeAdsBtn" type="button">Remove Ads</button>
       <button id="restartBtn" type="button">Restart</button>
     </div>
   </div>
@@ -457,6 +496,24 @@
       <button id="themesBtn" class="play-btn" type="button">Themes</button>
       <button id="settingsBtn" class="play-btn" type="button">Settings</button>
     </div>
+  </div>
+
+  <!-- Remove Ads overlay (Classic theme only) -->
+  <!-- To replace placeholder screenshots: set the src attribute on each img to a base64 data URI (e.g. data:image/png;base64,...) or a URL of the real screenshot -->
+  <div id="removeAdsOverlay" role="dialog" aria-modal="true" aria-labelledby="removeAdsTitle">
+    <div id="removeAdsTitle" class="removeads-title">Remove Ads</div>
+    <div class="removeads-text">
+      <div>- Remove all ads</div>
+      <div>- Unlock three new themes</div>
+      <div>- Vintage</div>
+      <div>- Ocean</div>
+      <div>- Neon</div>
+    </div>
+    <!-- Screenshot placeholders; replace src with base64 data URI or URL of the real screenshot -->
+    <img id="screenshotVintage" class="removeads-screenshot" src="" alt="Vintage theme screenshot" style="background:#7B5E3B;" />
+    <img id="screenshotOcean" class="removeads-screenshot" src="" alt="Ocean theme screenshot" style="background:#00008B;" />
+    <img id="screenshotNeon" class="removeads-screenshot" src="" alt="Neon theme screenshot" style="background:#8A00FF;" />
+    <button id="removeAdsBuyBtn" class="play-btn" type="button">0.99</button>
   </div>
 
   <div id="stats" class="stats" role="dialog" aria-modal="true" aria-labelledby="statsTitle">
@@ -832,6 +889,15 @@
 
   // Initialize selection state from saved preference
   applyTheme(currentTheme);
+
+  // Remove Ads overlay (Classic theme only)
+  function showRemoveAds(){ document.getElementById('removeAdsOverlay').classList.add('show'); }
+  function hideRemoveAds(){ document.getElementById('removeAdsOverlay').classList.remove('show'); }
+  document.getElementById('removeAdsBtn')?.addEventListener('click', showRemoveAds);
+  document.getElementById('removeAdsBuyBtn')?.addEventListener('click', function(e){ e.stopPropagation(); });
+  document.getElementById('removeAdsOverlay')?.addEventListener('click', function(e){
+    if (!e.target.closest('#removeAdsBuyBtn')){ hideRemoveAds(); }
+  });
 
   document.getElementById('privacyPolicyBtn')?.addEventListener('click', function(){
     window.open('https://docs.google.com/document/d/e/2PACX-1vSEezHmS2ktPkFL3lIV4qE8GEhIB4UQ8tTna3uKeVoOUcedrId0luAVYjbJjkQEiHrZJXjbzDF3QGGk/pub', '_blank', 'noopener,noreferrer');
