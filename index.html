@@ -423,6 +423,40 @@
     .theme-classic .piece svg circle,
     .theme-classic .piece svg path,
     .theme-classic .piece svg rect{ stroke: none !important; stroke-width: 0 !important; }
+
+    /* Remove Ads button: only visible in Classic theme */
+    #removeAdsBtn{ display: none; }
+    .theme-classic #removeAdsBtn{ display: inline-block; }
+
+    /* Remove Ads full-screen overlay */
+    #removeAdsOverlay{
+      position: fixed; inset: 0; display: none; flex-direction: column;
+      align-items: center; justify-content: center;
+      z-index: 76;
+      background: var(--black);
+      border: var(--accent-w) solid var(--gold);
+      border-radius: var(--sheet-radius);
+      box-sizing: border-box;
+      padding: 24px 20px;
+      gap: 14px;
+      font-family: "Boogaloo", system-ui;
+    }
+    #removeAdsOverlay.show{ display: flex; }
+    .ra-title{
+      font-size: clamp(24px, 7vw, 36px); font-weight: 900;
+      color: var(--gold); font-family: "Boogaloo", system-ui;
+    }
+    .ra-text{
+      color: #FFFFFF; font-family: "Boogaloo", system-ui;
+      font-size: clamp(14px, 4vw, 18px); line-height: 1.6;
+      text-align: center;
+      list-style: none; margin: 0; padding: 0;
+    }
+    .ra-text .ra-indent{ padding-left: 1.5em; }
+    .ra-previews{
+      display: flex; gap: 10px; justify-content: center; align-items: center;
+    }
+    .ra-previews canvas{ border-radius: 6px; }
   </style>
 </head>
 <body>
@@ -444,6 +478,7 @@
 
     <div class="controls">
       <button id="menuBtn" type="button">Menu</button>
+      <button id="removeAdsBtn" type="button">Remove Ads</button>
       <button id="restartBtn" type="button">Restart</button>
     </div>
   </div>
@@ -457,6 +492,24 @@
       <button id="themesBtn" class="play-btn" type="button">Themes</button>
       <button id="settingsBtn" class="play-btn" type="button">Settings</button>
     </div>
+  </div>
+
+  <!-- Remove Ads overlay -->
+  <div id="removeAdsOverlay" role="dialog" aria-modal="true" aria-label="Remove Ads">
+    <div class="ra-title">Remove Ads</div>
+    <ul class="ra-text">
+      <li>- Remove all ads</li>
+      <li>- Unlock three new themes</li>
+      <li class="ra-indent">- Vintage</li>
+      <li class="ra-indent">- Ocean</li>
+      <li class="ra-indent">- Neon</li>
+    </ul>
+    <div class="ra-previews">
+      <canvas id="raPreviewVintage" width="80" height="110"></canvas>
+      <canvas id="raPreviewOcean" width="80" height="110"></canvas>
+      <canvas id="raPreviewNeon" width="80" height="110"></canvas>
+    </div>
+    <button id="raBuyBtn" class="play-btn" type="button" aria-label="Buy for $0.99">0.99</button>
   </div>
 
   <div id="stats" class="stats" role="dialog" aria-modal="true" aria-labelledby="statsTitle">
@@ -853,6 +906,40 @@
     hideAbout();
     showSettings();
   });
+
+  // Remove Ads overlay
+  function showRemoveAds(){
+    drawRemoveAdsPreviews();
+    document.getElementById('removeAdsOverlay').classList.add('show');
+  }
+  function hideRemoveAds(){
+    document.getElementById('removeAdsOverlay').classList.remove('show');
+  }
+  function drawRemoveAdsPreviews(){
+    var themes = [
+      { id: 'raPreviewVintage', light: '#E6D0A8', dark: '#7B5E3B' },
+      { id: 'raPreviewOcean',   light: '#007FFF', dark: '#00008B' },
+      { id: 'raPreviewNeon',    light: '#00E5FF', dark: '#8A00FF' }
+    ];
+    themes.forEach(function(t){
+      var canvas = document.getElementById(t.id);
+      if (!canvas) return;
+      var ctx = canvas.getContext('2d');
+      var cols = 8, rows = 11;
+      var w = canvas.width / cols;
+      var h = canvas.height / rows;
+      for (var r = 0; r < rows; r++){
+        for (var c = 0; c < cols; c++){
+          ctx.fillStyle = (r + c) % 2 === 0 ? t.light : t.dark;
+          ctx.fillRect(c * w, r * h, w, h);
+        }
+      }
+    });
+  }
+  document.getElementById('removeAdsBtn')?.addEventListener('click', showRemoveAds);
+  document.getElementById('removeAdsOverlay')?.addEventListener('click', hideRemoveAds);
+  document.getElementById('raBuyBtn')?.addEventListener('click', function(e){ e.stopPropagation(); });
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape') hideRemoveAds(); });
   </script>
 
   <script>
