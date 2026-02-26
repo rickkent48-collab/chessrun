@@ -395,6 +395,59 @@
       gap: 10px; pointer-events:auto; font-family:"Boogaloo", system-ui;
     }
 
+    /* Remove Ads button: visible only in Classic theme, centered between Menu and Restart */
+    #removeAdsBtn{ display:none; }
+    .theme-classic .controls{ position:relative; }
+    .theme-classic #removeAdsBtn{
+      display:block;
+      position:absolute; left:50%; transform:translateX(-50%);
+      color:#FFFFFF !important;
+    }
+
+    /* Remove Ads overlay (full-screen, same gold outline as menu) */
+    #removeAdsOverlay{
+      position:fixed; inset:0; display:none; flex-direction:column;
+      align-items:center; justify-content:space-between;
+      z-index:71; background: var(--black);
+      border: var(--accent-w) solid var(--gold);
+      border-radius: var(--sheet-radius); box-sizing:border-box;
+      padding: 24px 20px;
+    }
+    #removeAdsOverlay.show{ display:flex; }
+    #removeAdsOverlay::before{
+      content:""; position:absolute; inset:0;
+      background: var(--black) !important; border-radius:inherit;
+    }
+    .remove-ads-title{
+      position:relative; z-index:1;
+      font-size: clamp(28px, 8vw, 48px); font-weight:900;
+      color: var(--gold); text-align:center;
+      font-family: "Boogaloo", system-ui;
+    }
+    .remove-ads-inner{
+      position:relative; z-index:1;
+      display:flex; flex-direction:column;
+      align-items:center; justify-content:center;
+      flex:1; gap:16px; width:100%;
+    }
+    .remove-ads-features{
+      color:#FFFFFF;
+      font-size: clamp(13px, 3.8vw, 18px);
+      line-height:1.8; text-align:left;
+      font-family: "Boogaloo", system-ui;
+    }
+    .remove-ads-thumbs{ display:flex; gap:8px; justify-content:center; align-items:flex-end; }
+    .remove-ads-thumb{ display:flex; flex-direction:column; align-items:center; gap:4px; }
+    .remove-ads-thumb-label{
+      color:#FFFFFF; font-size: clamp(10px, 2.5vw, 13px);
+      font-family: "Boogaloo", system-ui;
+    }
+    .remove-ads-thumbs canvas{
+      display:block; width: min(28vw, 90px); height: min(35vw, 113px);
+      border-radius:3px;
+    }
+    #removeAdsBuyBtn{ position:relative; z-index:1; }
+
     /* Vintage theme: carved wood effect without changing base colors */
     .theme-classic .piece{ /* Vintage is implemented by the class .theme-classic */
       /* Embossed/engraved feel using neutral (black/white) shadows */
@@ -444,6 +497,7 @@
 
     <div class="controls">
       <button id="menuBtn" type="button">Menu</button>
+      <button id="removeAdsBtn" type="button">Remove Ads</button>
       <button id="restartBtn" type="button">Restart</button>
     </div>
   </div>
@@ -457,6 +511,35 @@
       <button id="themesBtn" class="play-btn" type="button">Themes</button>
       <button id="settingsBtn" class="play-btn" type="button">Settings</button>
     </div>
+  </div>
+
+  <!-- Remove Ads overlay (Classic theme only) -->
+  <div id="removeAdsOverlay" role="dialog" aria-modal="true" aria-label="Remove Ads">
+    <div class="remove-ads-title">Remove Ads</div>
+    <div class="remove-ads-inner">
+      <div class="remove-ads-features">
+        <div>- Remove all ads</div>
+        <div>- Unlock three new themes</div>
+        <div>- Vintage</div>
+        <div>- Ocean</div>
+        <div>- Neon</div>
+      </div>
+      <div class="remove-ads-thumbs">
+        <div class="remove-ads-thumb">
+          <canvas id="thumbVintage" width="80" height="100" aria-label="Vintage theme preview: beige and brown checkered board"></canvas>
+          <span class="remove-ads-thumb-label">Vintage</span>
+        </div>
+        <div class="remove-ads-thumb">
+          <canvas id="thumbOcean" width="80" height="100" aria-label="Ocean theme preview: blue and navy checkered board"></canvas>
+          <span class="remove-ads-thumb-label">Ocean</span>
+        </div>
+        <div class="remove-ads-thumb">
+          <canvas id="thumbNeon" width="80" height="100" aria-label="Neon theme preview: cyan and purple checkered board"></canvas>
+          <span class="remove-ads-thumb-label">Neon</span>
+        </div>
+      </div>
+    </div>
+    <button id="removeAdsBuyBtn" class="play-btn" type="button" aria-label="Purchase Remove Ads for 0.99">0.99</button>
   </div>
 
   <div id="stats" class="stats" role="dialog" aria-modal="true" aria-labelledby="statsTitle">
@@ -852,6 +935,55 @@
   document.getElementById('aboutSheet')?.addEventListener('click', function(){
     hideAbout();
     showSettings();
+  });
+
+  // Remove Ads overlay (Classic theme only)
+  const $removeAdsOverlay = document.getElementById('removeAdsOverlay');
+  const $removeAdsBtn = document.getElementById('removeAdsBtn');
+  const $removeAdsBuyBtn = document.getElementById('removeAdsBuyBtn');
+  let removeAdsThumbsDrawn = false;
+
+  function drawThumbCanvas(canvasId, lightColor, darkColor, pieceColor) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    const cols = 4, rows = 5;
+    const sz = canvas.width / cols;
+    const ctx = canvas.getContext('2d');
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        ctx.fillStyle = (r + c) % 2 === 0 ? lightColor : darkColor;
+        ctx.fillRect(c * sz, r * sz, sz, sz);
+      }
+    }
+    ctx.fillStyle = pieceColor;
+    ctx.beginPath();
+    ctx.arc(canvas.width / 2, canvas.height / 2, sz * 0.28, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function showRemoveAds() {
+    $removeAdsOverlay.classList.add('show');
+    document.body.classList.add('menu-open');
+    if (!removeAdsThumbsDrawn) {
+      drawThumbCanvas('thumbVintage', '#E6D0A8', '#7B5E3B', '#FFFFFF');
+      drawThumbCanvas('thumbOcean', '#007FFF', '#00008B', '#FFFFFF');
+      drawThumbCanvas('thumbNeon', '#00E5FF', '#8A00FF', '#FFF01F');
+      removeAdsThumbsDrawn = true;
+    }
+  }
+
+  function hideRemoveAds() {
+    $removeAdsOverlay.classList.remove('show');
+    document.body.classList.remove('menu-open');
+  }
+
+  $removeAdsBtn?.addEventListener('click', showRemoveAds);
+  $removeAdsOverlay?.addEventListener('click', function(e) {
+    if (!$removeAdsBuyBtn.contains(e.target)) hideRemoveAds();
+  });
+  $removeAdsBuyBtn?.addEventListener('click', function(e) { e.stopPropagation(); });
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && $removeAdsOverlay.classList.contains('show')) hideRemoveAds();
   });
   </script>
 
