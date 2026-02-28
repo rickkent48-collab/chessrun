@@ -1008,6 +1008,10 @@
 
     const CONSTRICTION = [0.72, 0.82, 0.88, 0.93, 0.96, 0.98];
 
+    // Shared constants for piece-specific path / difficulty generation
+    const PATH_BUILD_MAX_ITERS = 80;
+    const QUEEN_THREAT_TYPES = ["n","b","r","k"];
+
     function currentStage(){ return STAGE_INDEX[player.type] ?? 0; }
 
     function nextPiece(type){
@@ -1311,7 +1315,7 @@
       const fwdDeltas = [[2,1],[2,-1],[1,2],[1,-2]];
       let iters = 0;
 
-      while (r < TOP_ROW && iters < 80){
+      while (r < TOP_ROW && iters < PATH_BUILD_MAX_ITERS){
         iters++;
         const options = shuffleCopy(fwdDeltas)
           .map(([dr,dc]) => ({nr: r+dr, nc: c+dc}))
@@ -1368,7 +1372,7 @@
       let dir = (c < BOARD_COLS / 2) ? +1 : -1;
       let iters = 0;
 
-      while (r < TOP_ROW && iters < 80){
+      while (r < TOP_ROW && iters < PATH_BUILD_MAX_ITERS){
         iters++;
         let moved = false;
 
@@ -1929,8 +1933,7 @@
         }
         shuffle(candidates);
         for (const cand of candidates.slice(0, 5)){
-          const types = ["n","b","r","k"];
-          const t = types[Math.floor(Math.random() * types.length)];
+          const t = QUEEN_THREAT_TYPES[Math.floor(Math.random() * QUEEN_THREAT_TYPES.length)];
           board[cand.r][cand.c] = { color: BLACK, type: t };
           if (attacksAnyProtected(cand.r, cand.c, t, protectedSquares)){ board[cand.r][cand.c] = null; continue; }
           const res2 = bfsSafePath(board, "Q");
