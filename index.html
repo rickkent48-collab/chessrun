@@ -1251,6 +1251,8 @@
           restrictFirstOppositionInAdjacentColumns(protectedSquares);
           enforceMandatoryAdjacentRook(protectedSquares);
           addPawnBoardDifficulty(protectedSquares);
+        } else {
+          addPieceSpecificDifficulty(protectedSquares);
         }
 
         const res = bfsSafePath(board, player.type);
@@ -1271,6 +1273,8 @@
         enforceMandatoryAdjacentRook(new Set());
         ensureTwoPawnDecisionEvents(new Set());
         addPawnBoardDifficulty(new Set());
+      } else {
+        addPieceSpecificDifficulty(new Set());
       }
       enforceOppositionCountRange(minOpp, maxOpp, new Set());
     }
@@ -1654,6 +1658,173 @@
         }
       }
     }
+
+    // King board difficulty: enemy kings placed 2 columns from the truth path attack
+    // the column between them and the path, forcing the king through a narrow corridor.
+    function addKingBoardDifficulty(protectedSquares){
+      if (player.type !== "K") return;
+      const stage = currentStage();
+      const nearWeights = OPP_WEIGHTS.near[stage];
+
+      const pathRes = bfsSafePath(board, player.type);
+      if (!pathRes || !pathRes.path || pathRes.path.length < 2) return;
+
+      let added = 0;
+      for (let i = 1; i < pathRes.path.length && added < 3; i++){
+        const curr = pathRes.path[i];
+        if (curr.r <= 0 || curr.r >= TOP_ROW) continue;
+        // Enemy king at curr.c +/- 2 attacks curr.c +/- 1 (flank squeeze) but not curr.c (path)
+        for (const dc of shuffleCopy([-2, 2, -3, 3])){
+          const nc = curr.c + dc;
+          if (!inBounds(curr.r, nc) || board[curr.r][nc]) continue;
+          const k = keyOf(curr.r, nc);
+          if (protectedSquares.has(k)) continue;
+          // Kings and queens create the widest exclusion zones for king movement
+          const t = pickFromSubset(nearWeights, ["k","q"]);
+          board[curr.r][nc] = { color: BLACK, type: t };
+          if (attacksAnyProtected(curr.r, nc, t, protectedSquares)){ board[curr.r][nc] = null; continue; }
+          const res = bfsSafePath(board, player.type);
+          if (res && res.path && res.path.length){ added++; break; }
+          else board[curr.r][nc] = null;
+        }
+      }
+    }
+
+    // Knight board difficulty: place enemies at forward L-shape landing squares
+    // so the knight must find the one safe capture/route provided by the truth path.
+    function addKnightBoardDifficulty(protectedSquares){
+      if (player.type !== "N") return;
+      const stage = currentStage();
+      const nearWeights = OPP_WEIGHTS.near[stage];
+
+      const pathRes = bfsSafePath(board, player.type);
+      if (!pathRes || !pathRes.path || pathRes.path.length < 2) return;
+
+      let added = 0;
+      const pathSet = new Set(pathRes.path.map(p => keyOf(p.r, p.c)));
+      for (let i = 0; i < pathRes.path.length && added < 4; i++){
+        const curr = pathRes.path[i];
+        for (const [dr, dc] of shuffleCopy([[2,1],[2,-1],[1,2],[1,-2]])){
+          const nr = curr.r + dr, nc = curr.c + dc;
+          const k = keyOf(nr, nc);
+          if (!inBounds(nr, nc) || board[nr][nc] || protectedSquares.has(k) || pathSet.has(k)) continue;
+          // Pawns and kings at landing squares are hardest for knights to navigate around
+          const t = pickFromSubset(nearWeights, ["p","k","n"]);
+          board[nr][nc] = { color: BLACK, type: t };
+          if (attacksAnyProtected(nr, nc, t, protectedSquares)){ board[nr][nc] = null; continue; }
+          const res = bfsSafePath(board, player.type);
+          if (res && res.path && res.path.length){ added++; break; }
+          else board[nr][nc] = null;
+        }
+      }
+    }
+
+    // Bishop board difficulty: place enemy rooks/queens on forward diagonals the
+    // bishop would otherwise use, blocking those lines and forcing the truth-path route.
+    function addBishopBoardDifficulty(protectedSquares){
+      if (player.type !== "B") return;
+      const stage = currentStage();
+      const nearWeights = OPP_WEIGHTS.near[stage];
+
+      const pathRes = bfsSafePath(board, player.type);
+      if (!pathRes || !pathRes.path || pathRes.path.length < 2) return;
+
+      let added = 0;
+      const pathSet = new Set(pathRes.path.map(p => keyOf(p.r, p.c)));
+      for (let i = 0; i < pathRes.path.length && added < 3; i++){
+        const curr = pathRes.path[i];
+        for (const [dr, dc] of shuffleCopy([[1,1],[1,-1]])){
+          let placed = false;
+          for (let steps = 2; steps <= 4 && !placed; steps++){
+            const nr = curr.r + dr * steps, nc = curr.c + dc * steps;
+            const k = keyOf(nr, nc);
+            if (!inBounds(nr, nc)) break;
+            if (board[nr][nc] || protectedSquares.has(k) || pathSet.has(k)) continue;
+            // A rook occupying a diagonal square forces the bishop to stop or capture there,
+            // blocking free diagonal passage and narrowing available routes
+            const t = pickFromSubset(nearWeights, ["r","q"]);
+            board[nr][nc] = { color: BLACK, type: t };
+            if (attacksAnyProtected(nr, nc, t, protectedSquares)){ board[nr][nc] = null; continue; }
+            const res = bfsSafePath(board, player.type);
+            if (res && res.path && res.path.length){ added++; placed = true; break; }
+            else board[nr][nc] = null;
+          }
+          if (added >= 3) break;
+        }
+      }
+    }
+
+    // Rook board difficulty: place enemy pieces inside the rook's forward columns
+    // to force horizontal detours through more dangerous territory.
+    function addRookBoardDifficulty(protectedSquares){
+      if (player.type !== "R") return;
+      const stage = currentStage();
+      const nearWeights = OPP_WEIGHTS.near[stage];
+
+      const pathRes = bfsSafePath(board, player.type);
+      if (!pathRes || !pathRes.path || pathRes.path.length < 2) return;
+
+      let added = 0;
+      const pathSet = new Set(pathRes.path.map(p => keyOf(p.r, p.c)));
+      const pathCols = [...new Set(pathRes.path.map(p => p.c))];
+      for (const col of shuffleCopy(pathCols)){
+        for (let r = 1; r <= TOP_ROW - 1 && added < 3; r++){
+          const k = keyOf(r, col);
+          if (board[r][col] || protectedSquares.has(k) || pathSet.has(k)) continue;
+          // Any piece placed in the rook's column blocks that file square,
+          // forcing the rook to detour horizontally through more dangerous territory
+          const t = pickFromSubset(nearWeights, ["b","q","r"]);
+          board[r][col] = { color: BLACK, type: t };
+          if (attacksAnyProtected(r, col, t, protectedSquares)){ board[r][col] = null; continue; }
+          const res = bfsSafePath(board, player.type);
+          if (res && res.path && res.path.length) added++;
+          else board[r][col] = null;
+        }
+        if (added >= 3) break;
+      }
+    }
+
+    // Queen board difficulty: dense extra heavy pieces covering all movement directions.
+    function addQueenBoardDifficulty(protectedSquares){
+      if (player.type !== "Q") return;
+      const stage = currentStage();
+      const nearWeights = OPP_WEIGHTS.near[stage];
+
+      const pathRes = bfsSafePath(board, player.type);
+      if (!pathRes || !pathRes.path || pathRes.path.length < 2) return;
+
+      let added = 0;
+      const pathSet = new Set(pathRes.path.map(p => keyOf(p.r, p.c)));
+      const candidates = [];
+      for (let r = 1; r <= TOP_ROW - 1; r++){
+        for (let c = 0; c < BOARD_COLS; c++){
+          const k = keyOf(r, c);
+          if (!board[r][c] && !protectedSquares.has(k) && !pathSet.has(k)) candidates.push({r,c});
+        }
+      }
+      shuffle(candidates);
+      for (const cand of candidates){
+        if (added >= 4) break;
+        const t = pickFromSubset(nearWeights, ["q","r","b","k"]);
+        board[cand.r][cand.c] = { color: BLACK, type: t };
+        if (attacksAnyProtected(cand.r, cand.c, t, protectedSquares)){ board[cand.r][cand.c] = null; continue; }
+        const res = bfsSafePath(board, player.type);
+        if (res && res.path && res.path.length) added++;
+        else board[cand.r][cand.c] = null;
+      }
+    }
+
+    // Dispatcher: call the appropriate piece-specific difficulty function for K/N/B/R/Q
+    function addPieceSpecificDifficulty(protectedSquares){
+      switch (player.type){
+        case "K": addKingBoardDifficulty(protectedSquares); break;
+        case "N": addKnightBoardDifficulty(protectedSquares); break;
+        case "B": addBishopBoardDifficulty(protectedSquares); break;
+        case "R": addRookBoardDifficulty(protectedSquares); break;
+        case "Q": addQueenBoardDifficulty(protectedSquares); break;
+      }
+    }
+
 
     function constrictAlternatesUsingPath(){
       const stage = currentStage();
