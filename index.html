@@ -998,15 +998,19 @@
     };
 
     const OPP_COUNTS = [
-      [14, 22],   // Pawn
-      [16, 24],   // King
-      [18, 26],   // Knight
-      [20, 28],   // Bishop
-      [22, 30],   // Rook
-      [24, 32],   // Queen
+      [16, 24],   // Pawn
+      [18, 26],   // King
+      [20, 28],   // Knight
+      [22, 30],   // Bishop
+      [24, 32],   // Rook
+      [26, 34],   // Queen
     ];
 
-    const CONSTRICTION = [0.65, 0.75, 0.83, 0.89, 0.93, 0.97];
+    const CONSTRICTION = [0.72, 0.82, 0.88, 0.93, 0.96, 0.98];
+
+    // Shared constants for piece-specific path / difficulty generation
+    const PATH_BUILD_MAX_ITERS = 80;
+    const QUEEN_THREAT_TYPES = ["n","b","r","k"];
 
     function currentStage(){ return STAGE_INDEX[player.type] ?? 0; }
 
@@ -1236,7 +1240,7 @@
         mandatoryRookKeys = new Set();
 
         const protectedSquares = new Set();
-        const ok = buildTruthPathWithForcedSwitch(protectedSquares);
+        const ok = buildTruthPath(protectedSquares);
         if (!ok){ attempts++; continue; }
 
         if (player.type === "P"){
@@ -1251,6 +1255,16 @@
           restrictFirstOppositionInAdjacentColumns(protectedSquares);
           enforceMandatoryAdjacentRook(protectedSquares);
           addPawnBoardDifficulty(protectedSquares);
+        } else if (player.type === "K"){
+          addKingBoardDifficulty(protectedSquares);
+        } else if (player.type === "N"){
+          addKnightBoardDifficulty(protectedSquares);
+        } else if (player.type === "B"){
+          addBishopBoardDifficulty(protectedSquares);
+        } else if (player.type === "R"){
+          addRookBoardDifficulty(protectedSquares);
+        } else if (player.type === "Q"){
+          addQueenBoardDifficulty(protectedSquares);
         }
 
         const res = bfsSafePath(board, player.type);
@@ -1271,8 +1285,139 @@
         enforceMandatoryAdjacentRook(new Set());
         ensureTwoPawnDecisionEvents(new Set());
         addPawnBoardDifficulty(new Set());
+      } else if (player.type === "K"){
+        addKingBoardDifficulty(new Set());
+      } else if (player.type === "N"){
+        addKnightBoardDifficulty(new Set());
+      } else if (player.type === "B"){
+        addBishopBoardDifficulty(new Set());
+      } else if (player.type === "R"){
+        addRookBoardDifficulty(new Set());
+      } else if (player.type === "Q"){
+        addQueenBoardDifficulty(new Set());
       }
       enforceOppositionCountRange(minOpp, maxOpp, new Set());
+    }
+
+    // Dispatch to piece-specific truth-path builder
+    function buildTruthPath(protectedSquares){
+      if (player.type === "N") return buildTruthPathKnight(protectedSquares);
+      if (player.type === "B") return buildTruthPathBishop(protectedSquares);
+      return buildTruthPathWithForcedSwitch(protectedSquares);
+    }
+
+    // Knight truth path: advances via L-shaped hops toward TOP_ROW
+    function buildTruthPathKnight(protectedSquares){
+      let r = player.row, c = player.col;
+      const stage = currentStage();
+      const nearWeights = OPP_WEIGHTS.near[stage];
+      protectedSquares.add(keyOf(r, c));
+      const fwdDeltas = [[2,1],[2,-1],[1,2],[1,-2]];
+      let iters = 0;
+
+      while (r < TOP_ROW && iters < PATH_BUILD_MAX_ITERS){
+        iters++;
+        const options = shuffleCopy(fwdDeltas)
+          .map(([dr,dc]) => ({nr: r+dr, nc: c+dc}))
+          .filter(({nr,nc}) => inBounds(nr,nc) && nr <= TOP_ROW)
+          .sort((a,b) => b.nr - a.nr);
+
+        let moved = false;
+        for (const {nr, nc} of options){
+          const k = keyOf(nr, nc);
+          if (protectedSquares.has(k)) continue;
+          const cell = board[nr][nc];
+          if (!cell){
+            board[nr][nc] = null;
+            guardSquareFromAttackWithImmutables(nr, nc, mandatoryRookKeys);
+            protectedSquares.add(k);
+            if (landingSafeAfterSimulatedMove(r, c, nr, nc)){
+              r = nr; c = nc; moved = true; break;
+            }
+            protectedSquares.delete(k);
+          } else if (cell.color === BLACK){
+            pruneAttackersForCaptureLanding(r, c, nr, nc);
+            if (landingSafeAfterSimulatedCapture(r, c, nr, nc)){
+              protectedSquares.add(k);
+              r = nr; c = nc; moved = true; break;
+            }
+          }
+        }
+
+        if (!moved){
+          for (const {nr, nc} of options){
+            const k = keyOf(nr, nc);
+            if (protectedSquares.has(k)) continue;
+            if (!board[nr][nc]) board[nr][nc] = { color: BLACK, type: pickFromSubset(nearWeights, ["n","b","r"]) };
+            pruneAttackersForCaptureLanding(r, c, nr, nc);
+            if (landingSafeAfterSimulatedCapture(r, c, nr, nc)){
+              protectedSquares.add(k);
+              r = nr; c = nc; moved = true; break;
+            } else {
+              if (!mandatoryRookKeys.has(k)) board[nr][nc] = null;
+            }
+          }
+          if (!moved) break;
+        }
+      }
+      return r === TOP_ROW;
+    }
+
+    // Bishop truth path: zigzags forward via 1-step diagonal moves
+    function buildTruthPathBishop(protectedSquares){
+      let r = player.row, c = player.col;
+      const stage = currentStage();
+      const nearWeights = OPP_WEIGHTS.near[stage];
+      protectedSquares.add(keyOf(r, c));
+      let dir = (c < BOARD_COLS / 2) ? +1 : -1;
+      let iters = 0;
+
+      while (r < TOP_ROW && iters < PATH_BUILD_MAX_ITERS){
+        iters++;
+        let moved = false;
+
+        for (const d of [dir, -dir]){
+          const nr = r + 1, nc = c + d;
+          if (!inBounds(nr, nc)) continue;
+          const k = keyOf(nr, nc);
+          if (protectedSquares.has(k)) continue;
+          const cell = board[nr][nc];
+          if (!cell){
+            board[nr][nc] = null;
+            guardSquareFromAttackWithImmutables(nr, nc, mandatoryRookKeys);
+            protectedSquares.add(k);
+            if (landingSafeAfterSimulatedMove(r, c, nr, nc)){
+              r = nr; c = nc; dir = -d; moved = true; break;
+            }
+            protectedSquares.delete(k);
+          } else if (cell.color === BLACK){
+            pruneAttackersForCaptureLanding(r, c, nr, nc);
+            if (landingSafeAfterSimulatedCapture(r, c, nr, nc)){
+              protectedSquares.add(k);
+              r = nr; c = nc; dir = -d; moved = true; break;
+            }
+          }
+        }
+
+        if (!moved){
+          for (const d of [dir, -dir]){
+            const nr = r + 1, nc = c + d;
+            if (!inBounds(nr, nc)) continue;
+            const k = keyOf(nr, nc);
+            if (protectedSquares.has(k)) continue;
+            if (!board[nr][nc]) board[nr][nc] = { color: BLACK, type: pickFromSubset(nearWeights, ["n","r","b"]) };
+            pruneAttackersForCaptureLanding(r, c, nr, nc);
+            if (landingSafeAfterSimulatedCapture(r, c, nr, nc)){
+              protectedSquares.add(k);
+              r = nr; c = nc; dir = -d; moved = true; break;
+            } else {
+              if (!mandatoryRookKeys.has(k)) board[nr][nc] = null;
+            }
+          }
+          if (!moved) break;
+        }
+      }
+      return r === TOP_ROW;
     }
 
     function buildTruthPathWithForcedSwitch(protectedSquares){
@@ -1651,6 +1796,149 @@
           const res2 = bfsSafePath(board, player.type);
           if (res2 && res2.path && res2.path.length){ extraCaptures++; break; }
           else board[curr.r][tc] = null;
+        }
+      }
+    }
+
+    // King difficulty: place long-range pieces flanking the path to create narrow corridors
+    function addKingBoardDifficulty(protectedSquares){
+      const pathRes = bfsSafePath(board, "K");
+      if (!pathRes || !pathRes.path || pathRes.path.length < 2) return;
+      const pathSet = new Set(pathRes.path.map(p => keyOf(p.r, p.c)));
+      const stage = currentStage();
+
+      let added = 0;
+      for (let i = 0; i < pathRes.path.length - 1 && added < 4; i++){
+        const {r, c} = pathRes.path[i];
+        const flankCols = shuffleCopy(Array.from({length: BOARD_COLS}, (_, x) => x))
+          .filter(cc => Math.abs(cc - c) >= 2 && !pathSet.has(keyOf(r, cc)));
+        for (const fc of flankCols){
+          if (board[r][fc]) continue;
+          const k = keyOf(r, fc);
+          if (protectedSquares.has(k) || mandatoryRookKeys.has(k)) continue;
+          const t = Math.random() < 0.6 ? "r" : "b";
+          board[r][fc] = { color: BLACK, type: t };
+          if (attacksAnyProtected(r, fc, t, protectedSquares)){ board[r][fc] = null; continue; }
+          const res2 = bfsSafePath(board, "K");
+          if (res2 && res2.path && res2.path.length){ added++; break; }
+          else board[r][fc] = null;
+        }
+      }
+    }
+
+    // Knight difficulty: block landing squares with pawns/knights around the path
+    function addKnightBoardDifficulty(protectedSquares){
+      const pathRes = bfsSafePath(board, "N");
+      if (!pathRes || !pathRes.path || pathRes.path.length < 2) return;
+      const pathSet = new Set(pathRes.path.map(p => keyOf(p.r, p.c)));
+
+      let added = 0;
+      for (let i = 0; i < pathRes.path.length - 1 && added < 4; i++){
+        const {r, c} = pathRes.path[i];
+        const candidates = [];
+        for (let rr = r + 1; rr <= Math.min(r + 3, TOP_ROW - 1); rr++){
+          for (let cc = 0; cc < BOARD_COLS; cc++){
+            const k = keyOf(rr, cc);
+            if (board[rr][cc] || protectedSquares.has(k) || pathSet.has(k)) continue;
+            if (Math.abs(cc - c) <= 3) candidates.push({r: rr, c: cc});
+          }
+        }
+        shuffle(candidates);
+        for (const cand of candidates.slice(0, 5)){
+          const k = keyOf(cand.r, cand.c);
+          const t = Math.random() < 0.5 ? "p" : "n";
+          board[cand.r][cand.c] = { color: BLACK, type: t };
+          if (attacksAnyProtected(cand.r, cand.c, t, protectedSquares)){ board[cand.r][cand.c] = null; continue; }
+          const res2 = bfsSafePath(board, "N");
+          if (res2 && res2.path && res2.path.length){ added++; break; }
+          else board[cand.r][cand.c] = null;
+        }
+      }
+    }
+
+    // Bishop difficulty: block diagonal lanes with rooks/knights to force specific captures
+    function addBishopBoardDifficulty(protectedSquares){
+      const pathRes = bfsSafePath(board, "B");
+      if (!pathRes || !pathRes.path || pathRes.path.length < 2) return;
+      const pathSet = new Set(pathRes.path.map(p => keyOf(p.r, p.c)));
+
+      let added = 0;
+      for (let i = 0; i < pathRes.path.length - 1 && added < 4; i++){
+        const {r, c} = pathRes.path[i];
+        const candidates = [];
+        for (let rr = r + 1; rr <= Math.min(r + 4, TOP_ROW - 1); rr++){
+          for (let cc = 0; cc < BOARD_COLS; cc++){
+            const k = keyOf(rr, cc);
+            if (board[rr][cc] || protectedSquares.has(k) || pathSet.has(k)) continue;
+            candidates.push({r: rr, c: cc});
+          }
+        }
+        shuffle(candidates);
+        for (const cand of candidates.slice(0, 5)){
+          const t = Math.random() < 0.55 ? "r" : "n";
+          board[cand.r][cand.c] = { color: BLACK, type: t };
+          if (attacksAnyProtected(cand.r, cand.c, t, protectedSquares)){ board[cand.r][cand.c] = null; continue; }
+          const res2 = bfsSafePath(board, "B");
+          if (res2 && res2.path && res2.path.length){ added++; break; }
+          else board[cand.r][cand.c] = null;
+        }
+      }
+    }
+
+    // Rook difficulty: place diagonal attackers (bishops/knights) to threaten transit squares
+    function addRookBoardDifficulty(protectedSquares){
+      const pathRes = bfsSafePath(board, "R");
+      if (!pathRes || !pathRes.path || pathRes.path.length < 2) return;
+      const pathSet = new Set(pathRes.path.map(p => keyOf(p.r, p.c)));
+
+      let added = 0;
+      for (let i = 0; i < pathRes.path.length - 1 && added < 4; i++){
+        const {r, c} = pathRes.path[i];
+        const candidates = [];
+        for (let rr = r; rr <= Math.min(r + 3, TOP_ROW - 1); rr++){
+          for (let cc = 0; cc < BOARD_COLS; cc++){
+            const k = keyOf(rr, cc);
+            if (board[rr][cc] || protectedSquares.has(k) || pathSet.has(k)) continue;
+            if (Math.abs(cc - c) >= 1) candidates.push({r: rr, c: cc});
+          }
+        }
+        shuffle(candidates);
+        for (const cand of candidates.slice(0, 5)){
+          const t = Math.random() < 0.55 ? "b" : "n";
+          board[cand.r][cand.c] = { color: BLACK, type: t };
+          if (attacksAnyProtected(cand.r, cand.c, t, protectedSquares)){ board[cand.r][cand.c] = null; continue; }
+          const res2 = bfsSafePath(board, "R");
+          if (res2 && res2.path && res2.path.length){ added++; break; }
+          else board[cand.r][cand.c] = null;
+        }
+      }
+    }
+
+    // Queen difficulty: dense mixed threats to maximize constraint on all directions
+    function addQueenBoardDifficulty(protectedSquares){
+      const pathRes = bfsSafePath(board, "Q");
+      if (!pathRes || !pathRes.path || pathRes.path.length < 2) return;
+      const pathSet = new Set(pathRes.path.map(p => keyOf(p.r, p.c)));
+
+      let added = 0;
+      for (let i = 0; i < pathRes.path.length - 1 && added < 5; i++){
+        const {r, c} = pathRes.path[i];
+        const candidates = [];
+        for (let rr = r; rr <= Math.min(r + 2, TOP_ROW - 1); rr++){
+          for (let cc = 0; cc < BOARD_COLS; cc++){
+            const k = keyOf(rr, cc);
+            if (board[rr][cc] || protectedSquares.has(k) || pathSet.has(k)) continue;
+            if (Math.abs(cc - c) >= 1) candidates.push({r: rr, c: cc});
+          }
+        }
+        shuffle(candidates);
+        for (const cand of candidates.slice(0, 5)){
+          const t = QUEEN_THREAT_TYPES[Math.floor(Math.random() * QUEEN_THREAT_TYPES.length)];
+          board[cand.r][cand.c] = { color: BLACK, type: t };
+          if (attacksAnyProtected(cand.r, cand.c, t, protectedSquares)){ board[cand.r][cand.c] = null; continue; }
+          const res2 = bfsSafePath(board, "Q");
+          if (res2 && res2.path && res2.path.length){ added++; break; }
+          else board[cand.r][cand.c] = null;
         }
       }
     }
