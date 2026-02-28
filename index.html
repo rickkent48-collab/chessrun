@@ -2562,13 +2562,41 @@
         [8, 2, false], [8, 6, false],
         [10, 3, false], [10, 7, false]
       ];
-      const fontSize = Math.max(Math.floor(sqW * 0.7), 4); // 70% of square width; min 4px
-      ctx.font = `${fontSize}px serif`; // serif needed: Boogaloo lacks chess Unicode glyphs
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
+      // Draw pawn using same SVG paths as in-game pawnSVG() (viewBox 0 0 100 100, piece = 60% of square)
+      function drawPawn(cx, cy, size, color){
+        const s = size / 100;
+        const ox = cx - size / 2, oy = cy - size / 2;
+        ctx.fillStyle = color;
+        // Head circle: cx=50, cy=24, r=14
+        ctx.beginPath();
+        ctx.arc(ox + 50*s, oy + 24*s, 14*s, 0, Math.PI*2);
+        ctx.fill();
+        // Body path
+        ctx.beginPath();
+        ctx.moveTo(ox + 35*s, oy + 40*s);
+        ctx.bezierCurveTo(ox + 35*s, oy + 36*s, ox + 65*s, oy + 36*s, ox + 65*s, oy + 40*s);
+        ctx.bezierCurveTo(ox + 65*s, oy + 46*s, ox + 60*s, oy + 52*s, ox + 54*s, oy + 56*s);
+        ctx.bezierCurveTo(ox + 60*s, oy + 60*s, ox + 62*s, oy + 66*s, ox + 62*s, oy + 72*s);
+        ctx.lineTo(ox + 38*s, oy + 72*s);
+        ctx.bezierCurveTo(ox + 38*s, oy + 66*s, ox + 40*s, oy + 60*s, ox + 46*s, oy + 56*s);
+        ctx.bezierCurveTo(ox + 40*s, oy + 52*s, ox + 35*s, oy + 46*s, ox + 35*s, oy + 40*s);
+        ctx.closePath();
+        ctx.fill();
+        // Base rects: x=28, y=72, w=44, h=8, rx=2 and x=22, y=80, w=56, h=8, rx=2
+        [[28,72,44,8],[22,80,56,8]].forEach(function([rx,ry,rw,rh]){
+          const r = 2*s, x=ox+rx*s, y=oy+ry*s, w=rw*s, h=rh*s;
+          ctx.beginPath();
+          ctx.moveTo(x+r, y);
+          ctx.lineTo(x+w-r, y); ctx.arcTo(x+w, y, x+w, y+r, r);
+          ctx.lineTo(x+w, y+h-r); ctx.arcTo(x+w, y+h, x+w-r, y+h, r);
+          ctx.lineTo(x+r, y+h); ctx.arcTo(x, y+h, x, y+h-r, r);
+          ctx.lineTo(x, y+r); ctx.arcTo(x, y, x+r, y, r);
+          ctx.closePath(); ctx.fill();
+        });
+      }
+      const pieceSize = sqW * 0.6;
       for (const [vRow, col, isUser] of pieces){
-        ctx.fillStyle = isUser ? t.user : t.opp;
-        ctx.fillText(isUser ? '♙' : '♟', (col + 0.5) * sqW, (rows - 1 - vRow + 0.5) * sqH);
+        drawPawn((col + 0.5) * sqW, (rows - 1 - vRow + 0.5) * sqH, pieceSize, isUser ? t.user : t.opp);
       }
     }
   </script>
