@@ -1251,6 +1251,16 @@
           restrictFirstOppositionInAdjacentColumns(protectedSquares);
           enforceMandatoryAdjacentRook(protectedSquares);
           addPawnBoardDifficulty(protectedSquares);
+        } else if (player.type === "K"){
+          addKingBoardDifficulty(protectedSquares);
+        } else if (player.type === "N"){
+          addKnightBoardDifficulty(protectedSquares);
+        } else if (player.type === "B"){
+          addBishopBoardDifficulty(protectedSquares);
+        } else if (player.type === "R"){
+          addRookBoardDifficulty(protectedSquares);
+        } else if (player.type === "Q"){
+          addQueenBoardDifficulty(protectedSquares);
         }
 
         const res = bfsSafePath(board, player.type);
@@ -1271,6 +1281,16 @@
         enforceMandatoryAdjacentRook(new Set());
         ensureTwoPawnDecisionEvents(new Set());
         addPawnBoardDifficulty(new Set());
+      } else if (player.type === "K"){
+        addKingBoardDifficulty(new Set());
+      } else if (player.type === "N"){
+        addKnightBoardDifficulty(new Set());
+      } else if (player.type === "B"){
+        addBishopBoardDifficulty(new Set());
+      } else if (player.type === "R"){
+        addRookBoardDifficulty(new Set());
+      } else if (player.type === "Q"){
+        addQueenBoardDifficulty(new Set());
       }
       enforceOppositionCountRange(minOpp, maxOpp, new Set());
     }
@@ -1652,6 +1672,226 @@
           if (res2 && res2.path && res2.path.length){ extraCaptures++; break; }
           else board[curr.r][tc] = null;
         }
+      }
+    }
+
+    // King: place knights/pawns adjacent to king's path to shrink safe step options
+    function addKingBoardDifficulty(protectedSquares){
+      if (player.type !== "K") return;
+      const stage = currentStage();
+      const weights = OPP_WEIGHTS.near[stage];
+      const pathRes = bfsSafePath(board, player.type);
+      if (!pathRes || !pathRes.path || pathRes.path.length < 2) return;
+      const pathSet = new Set(pathRes.path.map(p => keyOf(p.r, p.c)));
+
+      const seen = new Set();
+      const candidates = [];
+      for (const pk of pathSet){
+        const [pr, pc] = pk.split(",").map(Number);
+        for (let dr=-1; dr<=1; dr++) for (let dc=-1; dc<=1; dc++){
+          if (!dr && !dc) continue;
+          const nr=pr+dr, nc=pc+dc;
+          if (!inBounds(nr,nc) || nr===0 || nr>=TOP_ROW) continue;
+          const nk=keyOf(nr,nc);
+          if (seen.has(nk) || pathSet.has(nk) || protectedSquares.has(nk) || board[nr][nc]) continue;
+          seen.add(nk); candidates.push({r:nr,c:nc});
+        }
+      }
+      shuffle(candidates);
+
+      let added=0;
+      for (const cand of candidates){
+        if (added>=3) break;
+        if (board[cand.r][cand.c]) continue;
+        const t = pickFromSubset(weights, ["n","k","p"]);
+        board[cand.r][cand.c] = { color:BLACK, type:t };
+        if (attacksAnyProtected(cand.r,cand.c,t,protectedSquares)){ board[cand.r][cand.c]=null; continue; }
+        const res = bfsSafePath(board, player.type);
+        if (res && res.path && res.path.length) added++;
+        else board[cand.r][cand.c]=null;
+      }
+    }
+
+    // Knight: occupy or threaten off-path knight landing squares to force detours
+    function addKnightBoardDifficulty(protectedSquares){
+      if (player.type !== "N") return;
+      const stage = currentStage();
+      const weights = OPP_WEIGHTS.near[stage];
+      const pathRes = bfsSafePath(board, player.type);
+      if (!pathRes || !pathRes.path || pathRes.path.length < 2) return;
+      const pathSet = new Set(pathRes.path.map(p => keyOf(p.r, p.c)));
+
+      const knightJumps = [[2,1],[2,-1],[-2,1],[-2,-1],[1,2],[1,-2],[-1,2],[-1,-2]];
+      const seen = new Set();
+      const candidates = [];
+      for (const pk of pathSet){
+        const [pr,pc] = pk.split(",").map(Number);
+        for (const [dr,dc] of knightJumps){
+          const nr=pr+dr, nc=pc+dc;
+          if (!inBounds(nr,nc) || nr===0 || nr>=TOP_ROW) continue;
+          const nk=keyOf(nr,nc);
+          if (seen.has(nk) || pathSet.has(nk) || protectedSquares.has(nk) || board[nr][nc]) continue;
+          seen.add(nk); candidates.push({r:nr,c:nc});
+        }
+      }
+      shuffle(candidates);
+
+      let added=0;
+      for (const cand of candidates){
+        if (added>=3) break;
+        if (board[cand.r][cand.c]) continue;
+        const t = pickFromSubset(weights, ["n","p","b"]);
+        board[cand.r][cand.c] = { color:BLACK, type:t };
+        if (attacksAnyProtected(cand.r,cand.c,t,protectedSquares)){ board[cand.r][cand.c]=null; continue; }
+        const res = bfsSafePath(board, player.type);
+        if (res && res.path && res.path.length) added++;
+        else board[cand.r][cand.c]=null;
+      }
+    }
+
+    // Bishop: place blockers along diagonal corridors to narrow viable diagonals
+    function addBishopBoardDifficulty(protectedSquares){
+      if (player.type !== "B") return;
+      const stage = currentStage();
+      const weights = OPP_WEIGHTS.near[stage];
+      const pathRes = bfsSafePath(board, player.type);
+      if (!pathRes || !pathRes.path || pathRes.path.length < 2) return;
+      const pathSet = new Set(pathRes.path.map(p => keyOf(p.r, p.c)));
+
+      const diagDirs = [[1,1],[1,-1],[-1,1],[-1,-1]];
+      const seen = new Set();
+      const candidates = [];
+      for (const pk of pathSet){
+        const [pr,pc] = pk.split(",").map(Number);
+        for (const [dr,dc] of diagDirs){
+          let rr=pr+dr, cc=pc+dc;
+          while(inBounds(rr,cc)){
+            if (rr!==0 && rr<TOP_ROW){
+              const nk=keyOf(rr,cc);
+              if (!seen.has(nk) && !pathSet.has(nk) && !protectedSquares.has(nk) && !board[rr][cc]){
+                seen.add(nk); candidates.push({r:rr,c:cc});
+              }
+            }
+            if (board[rr][cc]) break;
+            rr+=dr; cc+=dc;
+          }
+        }
+      }
+      shuffle(candidates);
+
+      let added=0;
+      for (const cand of candidates){
+        if (added>=3) break;
+        if (board[cand.r][cand.c]) continue;
+        const t = pickFromSubset(weights, ["p","r","n"]);
+        board[cand.r][cand.c] = { color:BLACK, type:t };
+        if (attacksAnyProtected(cand.r,cand.c,t,protectedSquares)){ board[cand.r][cand.c]=null; continue; }
+        const res = bfsSafePath(board, player.type);
+        if (res && res.path && res.path.length) added++;
+        else board[cand.r][cand.c]=null;
+      }
+    }
+
+    // Rook: place obstacles along path rows to create narrow file corridors
+    function addRookBoardDifficulty(protectedSquares){
+      if (player.type !== "R") return;
+      const stage = currentStage();
+      const weights = OPP_WEIGHTS.near[stage];
+      const pathRes = bfsSafePath(board, player.type);
+      if (!pathRes || !pathRes.path || pathRes.path.length < 2) return;
+      const pathSet = new Set(pathRes.path.map(p => keyOf(p.r, p.c)));
+
+      const seenRows = new Set();
+      const candidates = [];
+      for (const pk of pathSet){
+        const [pr,pc] = pk.split(",").map(Number);
+        if (pr===0 || pr>=TOP_ROW || seenRows.has(pr)) continue;
+        seenRows.add(pr);
+        for (let c=0; c<BOARD_COLS; c++){
+          const nk=keyOf(pr,c);
+          if (!pathSet.has(nk) && !protectedSquares.has(nk) && !board[pr][c]) candidates.push({r:pr,c});
+        }
+      }
+      shuffle(candidates);
+
+      let added=0;
+      for (const cand of candidates){
+        if (added>=4) break;
+        if (board[cand.r][cand.c]) continue;
+        const t = pickFromSubset(weights, ["b","n","p"]);
+        board[cand.r][cand.c] = { color:BLACK, type:t };
+        if (attacksAnyProtected(cand.r,cand.c,t,protectedSquares)){ board[cand.r][cand.c]=null; continue; }
+        const res = bfsSafePath(board, player.type);
+        if (res && res.path && res.path.length) added++;
+        else board[cand.r][cand.c]=null;
+      }
+    }
+
+    // Queen: combine rank barriers (rook-style) and diagonal blockers (bishop-style)
+    function addQueenBoardDifficulty(protectedSquares){
+      if (player.type !== "Q") return;
+      const stage = currentStage();
+      const weights = OPP_WEIGHTS.near[stage];
+      const pathRes = bfsSafePath(board, player.type);
+      if (!pathRes || !pathRes.path || pathRes.path.length < 2) return;
+      const pathSet = new Set(pathRes.path.map(p => keyOf(p.r, p.c)));
+
+      // Rank barriers (rook-style)
+      const seenRows = new Set();
+      const rankCandidates = [];
+      for (const pk of pathSet){
+        const [pr,pc] = pk.split(",").map(Number);
+        if (pr===0 || pr>=TOP_ROW || seenRows.has(pr)) continue;
+        seenRows.add(pr);
+        for (let c=0; c<BOARD_COLS; c++){
+          const nk=keyOf(pr,c);
+          if (!pathSet.has(nk) && !protectedSquares.has(nk) && !board[pr][c]) rankCandidates.push({r:pr,c});
+        }
+      }
+      shuffle(rankCandidates);
+      let added=0;
+      for (const cand of rankCandidates){
+        if (added>=2) break;
+        if (board[cand.r][cand.c]) continue;
+        const t = pickFromSubset(weights, ["b","n","r"]);
+        board[cand.r][cand.c] = { color:BLACK, type:t };
+        if (attacksAnyProtected(cand.r,cand.c,t,protectedSquares)){ board[cand.r][cand.c]=null; continue; }
+        const res = bfsSafePath(board, player.type);
+        if (res && res.path && res.path.length) added++;
+        else board[cand.r][cand.c]=null;
+      }
+
+      // Diagonal blockers (bishop-style)
+      const diagDirs = [[1,1],[1,-1],[-1,1],[-1,-1]];
+      const diagSeen = new Set();
+      const diagCandidates = [];
+      for (const pk of pathSet){
+        const [pr,pc] = pk.split(",").map(Number);
+        for (const [dr,dc] of diagDirs){
+          let rr=pr+dr, cc=pc+dc;
+          while(inBounds(rr,cc)){
+            if (rr!==0 && rr<TOP_ROW){
+              const nk=keyOf(rr,cc);
+              if (!diagSeen.has(nk) && !pathSet.has(nk) && !protectedSquares.has(nk) && !board[rr][cc]){
+                diagSeen.add(nk); diagCandidates.push({r:rr,c:cc});
+              }
+            }
+            if (board[rr][cc]) break;
+            rr+=dr; cc+=dc;
+          }
+        }
+      }
+      shuffle(diagCandidates);
+      let diagAdded=0;
+      for (const cand of diagCandidates){
+        if (diagAdded>=2) break;
+        if (board[cand.r][cand.c]) continue;
+        const t = pickFromSubset(weights, ["p","r","n"]);
+        board[cand.r][cand.c] = { color:BLACK, type:t };
+        if (attacksAnyProtected(cand.r,cand.c,t,protectedSquares)){ board[cand.r][cand.c]=null; continue; }
+        const res = bfsSafePath(board, player.type);
+        if (res && res.path && res.path.length) diagAdded++;
+        else board[cand.r][cand.c]=null;
       }
     }
 
