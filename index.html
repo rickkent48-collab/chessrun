@@ -468,7 +468,8 @@
     #splash-text{
       text-align:center; color:#fff;
       font-size:clamp(36px,10vw,64px); font-weight:700;
-      font-family:"Boogaloo",system-ui; line-height:1.5;
+      font-family:Roboto,system-ui,-apple-system,Helvetica,Arial,sans-serif; line-height:1.5;
+      border:2px solid #fff; border-radius:12px; padding:24px 36px;
     }
   </style>
 </head>
@@ -1119,8 +1120,8 @@
       // Show menu initially
       showMenu();
 
-      // Hide splash screen after 1s
-      setTimeout(function(){ var s=document.getElementById('splash'); if(s) s.style.display='none'; }, 1000);
+      // Hide splash screen after 3s
+      setTimeout(function(){ var s=document.getElementById('splash'); if(s) s.style.display='none'; }, 3000);
     }
     function restart(){
       hideModal();
