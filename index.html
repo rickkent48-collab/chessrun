@@ -465,16 +465,32 @@
       display:flex; align-items:center; justify-content:center;
       z-index:10000;
     }
-    #splash-text{
+    .splash-word{
+      position:absolute;
       text-align:center; color:#fff;
       font-size:clamp(36px,10vw,64px); font-weight:700;
       font-family:"Boogaloo",system-ui; line-height:1.5;
+      opacity:0;
+      animation: splashFade 2s ease-in-out forwards;
+    }
+    #splash-w1{ animation-delay:0s; }
+    #splash-w2{ animation-delay:2s; }
+    #splash-w3{ animation-delay:4s; }
+    @keyframes splashFade{
+      0%  { opacity:0; }
+      25% { opacity:1; }
+      75% { opacity:1; }
+      100%{ opacity:0; }
     }
   </style>
 </head>
 <body>
   <!-- Splash screen -->
-  <div id="splash"><div id="splash-text">apps<br>by<br>rick</div></div>
+  <div id="splash" aria-hidden="true">
+    <span class="splash-word" id="splash-w1">apps</span>
+    <span class="splash-word" id="splash-w2">by</span>
+    <span class="splash-word" id="splash-w3">rick</span>
+  </div>
   <!-- Background music -->
   <audio id="bgMusic" loop style="display:none;">
     <source src="CS1.mp3" type="audio/mpeg">
@@ -1119,8 +1135,8 @@
       // Show menu initially
       showMenu();
 
-      // Hide splash screen after 1s
-      setTimeout(function(){ var s=document.getElementById('splash'); if(s) s.style.display='none'; }, 1000);
+      // Hide splash screen after 6s
+      setTimeout(function(){ var s=document.getElementById('splash'); if(s) s.style.display='none'; }, 6000);
     }
     function restart(){
       hideModal();
