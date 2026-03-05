@@ -101,7 +101,6 @@
       line-height:1;
       font-family: "Boogaloo", system-ui;
     }
-    .sq:active{ transform: scale(0.98); }
 
     .light{ background: var(--light); }
     .dark{  background: var(--dark); }
@@ -126,7 +125,6 @@
       color: #ffffff; font-weight:700; font-size: clamp(18px, 5vw, 22px);
       cursor:pointer; font-family: "Boogaloo", system-ui;
     }
-    .controls button:active{ opacity:0.8; }
 
     /* Modal */
     /* Modal overlay: keep screen visible; do not darken; allow buttons below to work */
@@ -212,7 +210,7 @@
       border-radius: 10px;
       pointer-events: none;
     }
-    .play-btn:active{ transform: translateY(1px); box-shadow: none; }
+    .play-btn:active{ box-shadow: none; }
 
     /* Stats overlay - bottom sheet */
     :root{
@@ -424,9 +422,9 @@
     .theme-classic .piece svg path,
     .theme-classic .piece svg rect{ stroke: none !important; stroke-width: 0 !important; }
 
-    /* Remove Ads button: visible only on Chess Run theme (no theme class on body) */
+    /* Remove Ads button: disabled - invisible and non-interactive */
     #removeAdsBtn { display: none; }
-    body:not(.theme-classic):not(.theme-ocean):not(.theme-neon) #removeAdsBtn { display: block; }
+    body:not(.theme-classic):not(.theme-ocean):not(.theme-neon) #removeAdsBtn { display: block; color: var(--black) !important; pointer-events: none !important; }
 
     /* Remove Ads overlay */
     #removeAds.show { display: flex; align-items: stretch; justify-content: stretch; }
@@ -461,9 +459,22 @@
       color: #ffffff; font-size: clamp(12px, 3.5vw, 16px);
       font-family: "Boogaloo", system-ui; font-weight: 700; text-align: center;
     }
+    /* Splash screen */
+    #splash{
+      position:fixed; inset:0; background:#000;
+      display:flex; align-items:center; justify-content:center;
+      z-index:10000;
+    }
+    #splash-text{
+      text-align:center; color:#fff;
+      font-size:clamp(36px,10vw,64px); font-weight:700;
+      font-family:"Boogaloo",system-ui; line-height:1.5;
+    }
   </style>
 </head>
 <body>
+  <!-- Splash screen -->
+  <div id="splash"><div id="splash-text">apps<br>by<br>rick</div></div>
   <!-- Background music -->
   <audio id="bgMusic" loop style="display:none;">
     <source src="CS1.mp3" type="audio/mpeg">
@@ -1107,6 +1118,9 @@
 
       // Show menu initially
       showMenu();
+
+      // Hide splash screen after 1s
+      setTimeout(function(){ var s=document.getElementById('splash'); if(s) s.style.display='none'; }, 1000);
     }
     function restart(){
       hideModal();
