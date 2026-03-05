@@ -1,0 +1,62 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+}
+
+android {
+    namespace 'com.chessrun.app'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.chessrun.app"
+        minSdk 21
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+    }
+
+    signingConfigs {
+        release {
+            def keystoreB64 = System.getenv("ANDROID_KEYSTORE_BASE64")
+            if (keystoreB64) {
+                def tmpDir = new File(System.getProperty("java.io.tmpdir"))
+                def keystoreFile = new File(tmpDir, "chessrun_release.jks")
+                try {
+                    keystoreFile.bytes = keystoreB64.decodeBase64()
+                    storeFile = keystoreFile
+                    storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                    keyAlias = System.getenv("ANDROID_KEY_ALIAS")
+                    keyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+                } catch (Exception e) {
+                    throw new GradleException("Failed to decode ANDROID_KEYSTORE_BASE64: ${e.message}", e)
+                }
+                // The temp file is inside the OS temp directory which is cleaned up
+                // by the CI runner after the job completes.
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            def keystoreB64 = System.getenv("ANDROID_KEYSTORE_BASE64")
+            if (keystoreB64) {
+                signingConfig signingConfigs.release
+            }
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'androidx.webkit:webkit:1.10.0'
+}

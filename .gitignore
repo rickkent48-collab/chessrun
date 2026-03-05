@@ -1,0 +1,28 @@
+# Android build outputs
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# Build directories
+build/
+app/build/
+
+# Gradle files
+.gradle/
+local.properties
+
+# IDE files
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Keystore files (never commit real keystores)
+*.jks
+*.keystore
+*.p12
+
+# Generated files
+gen/
+out/
