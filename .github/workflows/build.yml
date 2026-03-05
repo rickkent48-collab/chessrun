@@ -1,0 +1,70 @@
+name: Build Android App Bundle
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+
+      - name: Determine build type
+        id: build_type
+        run: |
+          if [ -n "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]; then
+            echo "signed=true" >> "$GITHUB_OUTPUT"
+            echo "artifact_name=chessrun-release-signed" >> "$GITHUB_OUTPUT"
+            echo "Build type: SIGNED release"
+          else
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+            echo "artifact_name=chessrun-release-unsigned" >> "$GITHUB_OUTPUT"
+            echo "Build type: UNSIGNED release (no signing secrets found)"
+          fi
+
+      - name: Build signed release AAB
+        if: steps.build_type.outputs.signed == 'true'
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: ./gradlew bundleRelease
+
+      - name: Build unsigned release AAB
+        if: steps.build_type.outputs.signed == 'false'
+        run: ./gradlew bundleRelease
+
+      - name: Upload AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.build_type.outputs.artifact_name }}
+          path: app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
