@@ -43,6 +43,13 @@ android {
     }
 }
 
+// kotlin-stdlib-jdk7 and kotlin-stdlib-jdk8 were merged into kotlin-stdlib in 1.8.0.
+// Excluding them prevents duplicate class errors when AGP/activity bring kotlin-stdlib:1.8+.
+configurations.all {
+    exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk7'
+    exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk8'
+}
+
 dependencies {
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'androidx.activity:activity:1.7.2'
