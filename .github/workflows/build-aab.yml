@@ -57,9 +57,27 @@ jobs:
 
       - name: Decode keystore
         if: steps.check_secrets.outputs.has_secrets == 'true'
+        shell: bash
         run: |
-          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android/keystore.jks
-          echo "Keystore decoded to android/keystore.jks"
+          mkdir -p android
+          printf '%s' "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | tr -d '\n\r ' | base64 --decode > android/keystore.jks
+          ls -lh android/keystore.jks
+
+      - name: Verify keystore
+        if: steps.check_secrets.outputs.has_secrets == 'true'
+        shell: bash
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          keytool -list \
+            -keystore android/keystore.jks \
+            -storepass "$ANDROID_KEYSTORE_PASSWORD" \
+            -alias "$ANDROID_KEY_ALIAS" \
+            -noprompt || {
+            echo "::error::Keystore verification failed. Check that ANDROID_KEYSTORE_PASSWORD and ANDROID_KEY_ALIAS match the generated keystore."
+            exit 1
+          }
 
       - name: Build release AAB
         run: ./gradlew :app:bundleRelease
