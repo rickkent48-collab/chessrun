@@ -92,6 +92,8 @@ After running **Generate Upload Keystore**, add the following four secrets to yo
 3. Under **Artifacts**, download `chess-run-release-aab`.
 4. The `.aab` file is ready for upload to Google Play.
 
+> **Important:** Google Play requires `versionCode` to strictly increase with every upload (including internal testing). Before each Play upload, increment `versionCode` in `android/app/build.gradle` by at least 1 and optionally bump `versionName` (e.g. `1.0.1` → `1.0.2`). Play will reject any AAB whose `versionCode` is not higher than the previously uploaded version on that track.
+
 ---
 
 ## Google Play App Signing (Recommended)
