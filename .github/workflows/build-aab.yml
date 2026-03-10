@@ -69,15 +69,39 @@ jobs:
         env:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
+          # Step 1: verify store password and that the alias exists
           keytool -list \
             -keystore android/keystore.jks \
             -storepass "$ANDROID_KEYSTORE_PASSWORD" \
             -alias "$ANDROID_KEY_ALIAS" \
-            -noprompt || {
-            echo "::error::Keystore verification failed. Check that ANDROID_KEYSTORE_PASSWORD and ANDROID_KEY_ALIAS match the generated keystore."
+            -noprompt 2>&1 || {
+            echo "::error::Keystore store-password or alias verification failed."
+            echo "::error::Check that ANDROID_KEYSTORE_PASSWORD and ANDROID_KEY_ALIAS are correct."
+            echo "::error::Re-run the 'Generate Upload Keystore' workflow and reset all 4 secrets."
             exit 1
           }
+          # Step 2: verify key password by doing a real test-sign with jarsigner.
+          # keytool -certreq ignores -keypass for PKCS12 keystores, so it cannot
+          # catch a wrong ANDROID_KEY_PASSWORD. jarsigner correctly tests all formats.
+          mkdir -p /tmp/kv-test
+          echo "Manifest-Version: 1.0" > /tmp/kv-test/MANIFEST.MF
+          jar cf /tmp/kv-verify.jar -C /tmp/kv-test MANIFEST.MF
+          jarsigner \
+            -keystore android/keystore.jks \
+            -storepass "$ANDROID_KEYSTORE_PASSWORD" \
+            -keypass "$ANDROID_KEY_PASSWORD" \
+            /tmp/kv-verify.jar \
+            "$ANDROID_KEY_ALIAS" 2>&1 || {
+            echo "::error::Key password verification failed: ANDROID_KEY_PASSWORD does not match the key in the keystore."
+            echo "::error::For PKCS12 keystores (modern Java default), ANDROID_KEY_PASSWORD must equal ANDROID_KEYSTORE_PASSWORD."
+            echo "::error::For JKS keystores, verify both ANDROID_KEYSTORE_PASSWORD and ANDROID_KEY_PASSWORD are correct."
+            echo "::error::Re-run the 'Generate Upload Keystore' workflow and reset all 4 secrets."
+            exit 1
+          }
+          rm -rf /tmp/kv-test /tmp/kv-verify.jar
+          echo "Keystore verification passed: store password, alias, and key password are all correct."
 
       - name: Build release AAB
         run: ./gradlew :app:bundleRelease
