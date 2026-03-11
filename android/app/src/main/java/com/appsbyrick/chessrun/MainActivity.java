@@ -27,9 +27,12 @@ public class MainActivity extends AppCompatActivity {
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
         // Allow the file:// origin to read other file:// sub-resources (fonts, audio).
-        // Safe here because the WebView only ever loads local app assets.
+        // Safe here because the WebView only ever loads local app assets from
+        // file:///android_asset/ — no remote URLs are ever loaded, so granting
+        // universal file access does not expose any remote content to local files.
         settings.setAllowFileAccess(true);
         settings.setAllowFileAccessFromFileURLs(true);
+        settings.setAllowUniversalAccessFromFileURLs(true);
         // Allow audio to play without requiring a prior user gesture (needed on some
         // WebView versions for background music loaded from local assets).
         settings.setMediaPlaybackRequiresUserGesture(false);
