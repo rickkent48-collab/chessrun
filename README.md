@@ -96,6 +96,45 @@ After running **Generate Upload Keystore**, add the following four secrets to yo
 
 ---
 
+## Asset Packaging — Fonts and Audio
+
+All game assets must be present in `android/app/src/main/assets/` **before building** the AAB, or they will not be included in the bundle and the app will fail to load them at runtime.
+
+### Required asset files
+
+| Path in repo | Loaded at runtime as | Purpose |
+|---|---|---|
+| `android/app/src/main/assets/index.html` | `file:///android_asset/index.html` | Game HTML/CSS/JS |
+| `android/app/src/main/assets/fonts/Boogaloo.woff2` | `file:///android_asset/fonts/Boogaloo.woff2` | Boogaloo display font |
+| `android/app/src/main/assets/CS1.mp3` | `file:///android_asset/CS1.mp3` | Background music |
+
+### Checklist before each Play upload
+
+1. **Verify asset filenames match exactly** — Android asset lookup is case-sensitive. The font file must be named `Boogaloo.woff2` (no spaces, no version suffix). The music file must be named `CS1.mp3`.
+2. **Confirm CSS `@font-face` reference** in `index.html` is:
+   ```css
+   src: url('fonts/Boogaloo.woff2') format('woff2');
+   ```
+3. **Confirm JS music fetch** in `index.html` uses `'CS1.mp3'` (no leading slash or subfolder).
+4. **Bump `versionCode`** in `android/app/build.gradle` before every upload — Play rejects any AAB with a `versionCode` ≤ the previously uploaded value.
+5. **Commit all asset and code changes** before triggering the build workflow, so the CI checkout includes the latest files.
+6. **After installing from Play internal testing**, uninstall the previous version from the device first to ensure no stale cached assets remain.
+
+### Verifying assets are in the AAB
+
+To confirm assets were packaged correctly, unzip the downloaded `.aab` file and check that `base/assets/fonts/Boogaloo.woff2` and `base/assets/CS1.mp3` are present:
+
+```bash
+unzip -l chess-run-release.aab | grep -E "fonts/|CS1"
+# Expected output:
+# ... base/assets/fonts/Boogaloo.woff2
+# ... base/assets/CS1.mp3
+```
+
+If either file is missing, check that it exists in the repo under `android/app/src/main/assets/` and re-trigger the build.
+
+---
+
 ## Google Play App Signing (Recommended)
 
 Google Play uses **Play App Signing**: you upload your bundle signed with the *upload key* (generated above) and Google re-signs it with a *separate app signing key* that they manage. This means:
