@@ -710,9 +710,9 @@
   let gestureHandled = false;     // Prevent double start from pointerdown + click
   let musicStartupComplete = false; // Tracks successful startup; can be used for diagnostics or future enhancements
 
-  // If legacy <audio id="bgm"> exists, ensure it never plays alongside Web Audio
+  // If legacy <audio id="bgMusic"> exists, ensure it never plays alongside Web Audio
   (function disableLegacyBgm(){
-    const legacy = document.getElementById('bgm');
+    const legacy = document.getElementById('bgMusic');
     if (legacy){ try{ legacy.pause(); legacy.muted = true; }catch(e){} }
   })();
 
@@ -721,9 +721,9 @@
     try {
       fetch('CS1.mp3', { cache: 'force-cache' })
         .then(r => r.arrayBuffer())
-        .then(arr => { bgmArrayBuffer = arr; })
-        .catch(()=>{});
-    } catch(e){}
+        .then(arr => { bgmArrayBuffer = arr; console.log('[ChessRun] BGM prefetch OK, bytes=' + arr.byteLength); })
+        .catch(function(err){ console.error('[ChessRun] BGM prefetch failed: ' + err); });
+    } catch(e){ console.error('[ChessRun] BGM prefetch exception: ' + e); }
   })();
 
   async function ensureAudioContext(){
@@ -744,7 +744,7 @@
         bgmArrayBuffer = await resp.arrayBuffer();
       }
       musicBuffer = await audioCtx.decodeAudioData(bgmArrayBuffer); // decode prefetched buffer
-    } catch(e){ /* silently fail; will retry on next gesture */ }
+    } catch(e){ console.error('[ChessRun] BGM load/decode failed: ' + e); }
     return musicBuffer;
   }
 
@@ -775,7 +775,7 @@
 
     await ensureAudioContext();
     await ensureDecodedBuffer();
-    if (!musicBuffer){ musicStarting = false; return; }
+    if (!musicBuffer){ console.error('[ChessRun] startMusicOnce: buffer unavailable, music will not play'); musicStarting = false; return; }
 
     // Build graph without stopping any prior instance (there shouldn't be one)
     musicSource = audioCtx.createBufferSource();
@@ -796,7 +796,7 @@
     } catch(e){}
 
     // Debounce window + mark startup complete
-    setTimeout(()=>{ musicStarting = false; musicStartupComplete = true; }, 800);
+    setTimeout(()=>{ musicStarting = false; musicStartupComplete = true; console.log('[ChessRun] BGM started successfully'); }, 800);
   }
 
   async function fadeOutAndStop(durationMs = 200){
@@ -955,6 +955,28 @@
   document.getElementById('aboutSheet')?.addEventListener('click', function(){
     hideAbout();
     showSettings();
+  });
+
+  // Diagnostic: log font and music asset load status on startup (visible in Logcat via WebChromeClient)
+  document.addEventListener('DOMContentLoaded', function() {
+    // Font diagnostic
+    document.fonts.load('16px "Boogaloo"').then(function(fonts) {
+      if (fonts.length > 0) {
+        console.log('[ChessRun] Font Boogaloo loaded OK (' + fonts.length + ' face(s))');
+      } else {
+        console.error('[ChessRun] Font Boogaloo NOT loaded - check fonts/Boogaloo.woff2 path');
+      }
+    }).catch(function(err) {
+      console.error('[ChessRun] Font load check error: ' + err);
+    });
+    // Music asset diagnostic
+    fetch('CS1.mp3', { method: 'HEAD', cache: 'force-cache' })
+      .then(function(r) {
+        console.log('[ChessRun] CS1.mp3 reachable, status=' + r.status);
+      })
+      .catch(function(err) {
+        console.error('[ChessRun] CS1.mp3 NOT reachable: ' + err);
+      });
   });
   </script>
 
