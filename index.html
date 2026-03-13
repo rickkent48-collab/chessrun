@@ -701,9 +701,9 @@
   let gestureHandled = false;     // Prevent double start from pointerdown + click
   let musicStartupComplete = false; // Tracks successful startup; can be used for diagnostics or future enhancements
 
-  // If legacy <audio id="bgm"> exists, ensure it never plays alongside Web Audio
+  // If legacy <audio id="bgMusic"> exists, ensure it never plays alongside Web Audio
   (function disableLegacyBgm(){
-    const legacy = document.getElementById('bgm');
+    const legacy = document.getElementById('bgMusic');
     if (legacy){ try{ legacy.pause(); legacy.muted = true; }catch(e){} }
   })();
 
