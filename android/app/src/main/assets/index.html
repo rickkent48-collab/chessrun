@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>ChessRun</title>
+  <base href="file:///android_asset/">
   <!-- Boogaloo font for all text -->
   <style>
     /* Offline Boogaloo font - loaded from bundled app assets */
@@ -699,125 +700,23 @@
   </div>
 
   <script>
-  // Robust gapless background music manager with debounced gesture start and fade envelopes
-  let audioCtx = null;
-  let bgmArrayBuffer = null;      // Prefetched raw audio bytes
-  let musicBuffer = null;         // Decoded AudioBuffer
-  let musicSource = null;         // Current BufferSource
-  let gainNode = null;            // Gain for fade in/out
+  // Background music using <audio> element (compatible with Android WebView file:// URLs)
+  const bgMusic = document.getElementById('bgMusic');
   let musicEnabled = localStorage.getItem('chessrun-music-enabled') !== 'false'; // Controlled by Settings toggle
-  let musicStarting = false;      // Debounce flag
-  let gestureHandled = false;     // Prevent double start from pointerdown + click
-  let musicStartupComplete = false; // Tracks successful startup; can be used for diagnostics or future enhancements
+  let musicStarted = false; // Tracks whether play() has been called after a user gesture
 
-  // If legacy <audio id="bgMusic"> exists, ensure it never plays alongside Web Audio
-  (function disableLegacyBgm(){
-    const legacy = document.getElementById('bgMusic');
-    if (legacy){ try{ legacy.pause(); legacy.muted = true; }catch(e){} }
-  })();
-
-  // Prefetch the mp3 bytes as early as possible (no autoplay implications)
-  (function prefetchBgm(){
+  function startMusicOnce(){
+    if (!musicEnabled || musicStarted) return;
+    musicStarted = true;
     try {
-      fetch('CS1.mp3', { cache: 'force-cache' })
-        .then(r => r.arrayBuffer())
-        .then(arr => { bgmArrayBuffer = arr; console.log('[ChessRun] BGM prefetch OK, bytes=' + arr.byteLength); })
-        .catch(function(err){ console.error('[ChessRun] BGM prefetch failed: ' + err); });
-    } catch(e){ console.error('[ChessRun] BGM prefetch exception: ' + e); }
-  })();
-
-  async function ensureAudioContext(){
-    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    if (audioCtx.state === 'suspended'){
-      try { await audioCtx.resume(); } catch(e){}
-    }
-    return audioCtx;
-  }
-
-  async function ensureDecodedBuffer(){
-    await ensureAudioContext();
-    if (musicBuffer) return musicBuffer;
-    // If prefetch didn't finish yet, fetch now
-    try {
-      if (!bgmArrayBuffer){
-        const resp = await fetch('CS1.mp3', { cache: 'force-cache' });
-        bgmArrayBuffer = await resp.arrayBuffer();
-      }
-      musicBuffer = await audioCtx.decodeAudioData(bgmArrayBuffer); // decode prefetched buffer
-    } catch(e){ console.error('[ChessRun] BGM load/decode failed: ' + e); }
-    return musicBuffer;
-  }
-
-  function disconnectSource(){
-    if (musicSource){
-      try { musicSource.disconnect(); } catch(e){}
-      musicSource = null;
-    }
-    if (gainNode){
-      try { gainNode.disconnect(); } catch(e){}
-      gainNode = null;
-    }
-  }
-
-  function stopMusicImmediate(){
-    if (musicSource){
-      try { musicSource.stop(0); } catch(e){}
-    }
-    disconnectSource();
-  }
-
-  async function startMusicOnce(){
-    if (!musicEnabled) return;
-    // If a source already exists, assume it is (or will be) playing; do NOT restart/stop
-    if (musicSource) { return; }
-    if (musicStarting) { return; }
-    musicStarting = true;
-
-    await ensureAudioContext();
-    await ensureDecodedBuffer();
-    if (!musicBuffer){ console.error('[ChessRun] startMusicOnce: buffer unavailable, music will not play'); musicStarting = false; return; }
-
-    // Build graph without stopping any prior instance (there shouldn't be one)
-    musicSource = audioCtx.createBufferSource();
-    musicSource.buffer = musicBuffer;
-    musicSource.loop = true; // keep gapless loop
-    gainNode = audioCtx.createGain();
-    gainNode.gain.value = 0.0; // start muted; fade prevents clicks
-    musicSource.connect(gainNode);
-    gainNode.connect(audioCtx.destination);
-
-    // Slight schedule offset + fade-in to avoid crackle
-    const t0 = audioCtx.currentTime + 0.05;
-    try { musicSource.start(t0); } catch(e){}
-    try {
-      gainNode.gain.cancelScheduledValues(0);
-      gainNode.gain.setValueAtTime(0.0, t0);
-      gainNode.gain.linearRampToValueAtTime(1.0, t0 + 0.35);
-    } catch(e){}
-
-    // Debounce window + mark startup complete
-    setTimeout(()=>{ musicStarting = false; musicStartupComplete = true; console.log('[ChessRun] BGM started successfully'); }, 800);
-  }
-
-  async function fadeOutAndStop(durationMs = 200){
-    if (!audioCtx || !gainNode || !musicSource) { stopMusicImmediate(); return; }
-    const t0 = audioCtx.currentTime;
-    try {
-      gainNode.gain.cancelScheduledValues(0);
-      gainNode.gain.setValueAtTime(gainNode.gain.value, t0);
-      gainNode.gain.linearRampToValueAtTime(0.0, t0 + (durationMs/1000));
-    } catch(e){}
-    // stop the source after fade completes
-    setTimeout(()=>{ stopMusicImmediate(); }, durationMs + 20);
+      bgMusic.play().then(function(){ console.log('[ChessRun] BGM started successfully'); })
+             .catch(function(err){ console.error('[ChessRun] BGM play failed: ' + err); });
+    } catch(e){ console.error('[ChessRun] BGM play exception: ' + e); }
   }
 
   // Start music on first user interaction anywhere (unless disabled)
   function startOnFirstTap(){
-    try {
-      if (musicEnabled) {
-        ensureAudioContext().then(startMusicOnce).catch(()=>{});
-      }
-    } catch(e) {}
+    startMusicOnce();
   }
 
   // Capture-phase listeners ensure we catch the very first interaction
@@ -826,28 +725,34 @@
   document.addEventListener('mousedown', startOnFirstTap, { once: true, capture: true });
   document.addEventListener('keydown', startOnFirstTap, { once: true, capture: true });
 
-  // Optional: keep Start button shortcut; guarded by once and idempotent start
+  // Optional: keep Start button shortcut
   document.getElementById('playBtn')?.addEventListener('click', startOnFirstTap, { once: true });
 
   // Settings toggle integration (button exists from previous PR)
   const toggleBtn = document.getElementById('musicToggleBtn');
-  function updateToggleText(){ 
+  function updateToggleText(){
     if (toggleBtn) {
       toggleBtn.textContent = musicEnabled ? 'Music Enabled' : 'Music Disabled';
       toggleBtn.setAttribute('aria-pressed', musicEnabled ? 'true' : 'false');
     }
   }
-  async function toggleMusic(){
+  function toggleMusic(){
     musicEnabled = !musicEnabled;
     localStorage.setItem('chessrun-music-enabled', String(musicEnabled));
     updateToggleText();
-    if (musicEnabled){ await startMusicOnce(); }
-    else { await fadeOutAndStop(180); }
+    if (musicEnabled){
+      if (!musicStarted){
+        startMusicOnce(); // first play: triggered by user gesture on toggle button
+      } else {
+        bgMusic.play().catch(function(err){ console.error('[ChessRun] BGM resume failed: ' + err); });
+      }
+    } else {
+      bgMusic.pause();
+    }
   }
-  toggleBtn?.addEventListener('click', async (e) => {
+  toggleBtn?.addEventListener('click', function(e) {
     e.stopPropagation(); // Prevent event bubbling to avoid closing the settings dialog
-    await ensureAudioContext();
-    await toggleMusic();
+    toggleMusic();
   });
 
   // Initialize toggle label
@@ -969,14 +874,13 @@
     }).catch(function(err) {
       console.error('[ChessRun] Font load check error: ' + err);
     });
-    // Music asset diagnostic
-    fetch('CS1.mp3', { method: 'HEAD', cache: 'force-cache' })
-      .then(function(r) {
-        console.log('[ChessRun] CS1.mp3 reachable, status=' + r.status);
-      })
-      .catch(function(err) {
-        console.error('[ChessRun] CS1.mp3 NOT reachable: ' + err);
-      });
+    // Music asset diagnostic - use audio element canplaythrough event instead of fetch
+    bgMusic.addEventListener('canplaythrough', function(){
+      console.log('[ChessRun] CS1.mp3 loaded and ready to play');
+    }, { once: true });
+    bgMusic.addEventListener('error', function(){
+      console.error('[ChessRun] CS1.mp3 NOT reachable: audio element error');
+    }, { once: true });
   });
   </script>
 
