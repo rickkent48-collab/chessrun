@@ -87,6 +87,7 @@
       transform: translateY(0);
       pointer-events:none;
       will-change: transform;
+      backface-visibility: hidden;
       z-index:5;
     }
     .strip-scroller.transition{
@@ -1013,14 +1014,25 @@
       const totalTakes = s.totalTakes + (finalTakes||0);
       const mostTakes  = Math.max(s.mostTakes, (finalTakes||0));
       const highScore  = Math.max(s.highScore, (finalScore||0));
+      console.log("[Stats] saving on game end — finalScore:", finalScore, "finalTakes:", finalTakes,
+        "totalGames:", totalGames, "totalScore:", totalScore, "totalTakes:", totalTakes,
+        "mostTakes:", mostTakes, "highScore:", highScore);
       localStorage.setItem("chessrun-total-games", String(totalGames));
       localStorage.setItem("chessrun-total-score", String(totalScore));
       localStorage.setItem("chessrun-total-takes", String(totalTakes));
       localStorage.setItem("chessrun-most-takes", String(mostTakes));
       localStorage.setItem("chessrun-highscore", String(highScore));
+      console.log("[Stats] verify read-back — total-games:", localStorage.getItem("chessrun-total-games"),
+        "total-score:", localStorage.getItem("chessrun-total-score"),
+        "total-takes:", localStorage.getItem("chessrun-total-takes"),
+        "most-takes:", localStorage.getItem("chessrun-most-takes"),
+        "highscore:", localStorage.getItem("chessrun-highscore"));
     }
     function renderStats(){
       const s = loadStats();
+      console.log("[Stats] renderStats — totalGames:", s.totalGames, "highScore:", s.highScore,
+        "totalScore:", s.totalScore, "avgScore:", s.avgScore,
+        "mostTakes:", s.mostTakes, "totalTakes:", s.totalTakes, "avgTakes:", s.avgTakes);
       document.getElementById("statTotalGames").textContent = String(s.totalGames);
       document.getElementById("statHigh").textContent = String(s.highScore);
       document.getElementById("statTotalScore").textContent = String(s.totalScore);
@@ -2426,8 +2438,10 @@
       $board.style.opacity = "0";
 
       requestAnimationFrame(() => {
-        strip.classList.add("transition");
-        strip.style.transform = `translateY(0px)`;
+        requestAnimationFrame(() => {
+          strip.classList.add("transition");
+          strip.style.transform = `translateY(0px)`;
+        });
       });
 
       strip.addEventListener("transitionend", () => {
