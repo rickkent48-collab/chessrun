@@ -913,6 +913,7 @@
     let player = { row: 0, col: 0, type: "P" };
 
     let score = 0;
+    let prevScore = 0;
     let maxRowReached = 0;
     let high = 0;
     let gameOver = false;
@@ -921,6 +922,7 @@
     let waitingForDeathTap = false;
     let killerInfo = null; // { row, col, type }
     let captures = 0;
+    let prevCaptures = 0;
     let boardsInCurrentStage = 0;
 
     // Set of immutable black pieces (including mandatory rooks and event pieces)
@@ -1087,9 +1089,8 @@
     }
     function restart(){
       hideModal();
-      updateStatsOnGameEnd(score, captures);
-      captures = 0; updateCaptures();
-      score = 0;
+      captures = 0; prevCaptures = 0; updateCaptures();
+      score = 0; prevScore = 0;
       maxRowReached = 0;
       player.type = "P";
       gameOver = false;
@@ -2332,6 +2333,9 @@
     function performMove(toRow, toCol){
       if (gameOver || inGameOverSequence || isAdvancing) return;
 
+      const s = loadStats();
+      localStorage.setItem("chessrun-total-games", String(s.totalGames + 1));
+
       if (toRow > maxRowReached){
         score += (toRow - maxRowReached);
         maxRowReached = toRow;
@@ -2524,9 +2528,26 @@
         localStorage.setItem("chessrun-highscore", String(high));
         updateHigh();
       }
+      if (score > prevScore){
+        const delta = score - prevScore;
+        const s = loadStats();
+        localStorage.setItem("chessrun-total-score", String(s.totalScore + delta));
+        prevScore = score;
+      }
     }
     function updateHigh(){ $high.textContent = String(high); }
-    function updateCaptures(){ $cap.textContent = String(captures); }
+    function updateCaptures(){
+      $cap.textContent = String(captures);
+      if (captures > prevCaptures){
+        const delta = captures - prevCaptures;
+        const s = loadStats();
+        localStorage.setItem("chessrun-total-takes", String(s.totalTakes + delta));
+        if (captures > s.mostTakes){
+          localStorage.setItem("chessrun-most-takes", String(captures));
+        }
+        prevCaptures = captures;
+      }
+    }
 
     function applyProgression(){
       let newType = player.type;
@@ -2691,7 +2712,6 @@
     function endGame(){
       gameOver = true;
       inGameOverSequence = false;
-      updateStatsOnGameEnd(score, captures);
       showGameOverCard();
     }
     function hideModal(){ 
