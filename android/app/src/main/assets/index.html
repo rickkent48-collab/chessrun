@@ -1087,6 +1087,7 @@
     }
     function restart(){
       hideModal();
+      updateStatsOnGameEnd(score, captures);
       captures = 0; updateCaptures();
       score = 0;
       maxRowReached = 0;
