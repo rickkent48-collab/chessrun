@@ -2522,7 +2522,10 @@
     }
 
     function updateScore(){
+      console.log("[Score] updateScore — score:", score, "high:", high);
       $score.textContent = String(score);
+      const storedHigh = parseInt(localStorage.getItem("chessrun-highscore") || "0", 10);
+      if (storedHigh > high) { high = storedHigh; updateHigh(); }
       if (score > high){
         high = score;
         localStorage.setItem("chessrun-highscore", String(high));
