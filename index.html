@@ -1188,6 +1188,8 @@
 
     // New game setup
     function resetBoardForNewGame(){
+      const s = loadStats();
+      localStorage.setItem("chessrun-total-games", String(s.totalGames + 1));
       let tries = 0;
       while (tries < 80){
         board = createEmptyBoard();
@@ -2385,9 +2387,6 @@
     // --------------------- Gameplay ---------------------
     function performMove(toRow, toCol){
       if (gameOver || inGameOverSequence || isAdvancing) return;
-
-      const s = loadStats();
-      localStorage.setItem("chessrun-total-games", String(s.totalGames + 1));
 
       if (toRow > maxRowReached){
         score += (toRow - maxRowReached);
