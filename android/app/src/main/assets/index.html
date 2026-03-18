@@ -90,6 +90,9 @@
       transform: translateY(0) translateZ(0);
       backface-visibility: hidden;
       -webkit-backface-visibility: hidden;
+      -webkit-transform-style: preserve-3d;
+      transform-style: preserve-3d;
+      isolation: isolate;
       z-index:5;
     }
     .strip-scroller.transition{
@@ -926,6 +929,7 @@
     let captures = 0;
     let prevCaptures = 0;
     let boardsInCurrentStage = 0;
+    let runFirstMoveMade = false;
 
     // Set of immutable black pieces (including mandatory rooks and event pieces)
     let mandatoryRookKeys = new Set();
@@ -1099,6 +1103,7 @@
       killerInfo = null;
       isAdvancing = false;
       boardsInCurrentStage = 0;
+      runFirstMoveMade = false;
       resetBoardForNewGame();
       renderBoard();
       updateScore();
@@ -1135,8 +1140,6 @@
 
     // New game setup
     function resetBoardForNewGame(){
-      const s = loadStats();
-      localStorage.setItem("chessrun-total-games", String(s.totalGames + 1));
       let tries = 0;
       while (tries < 80){
         board = createEmptyBoard();
@@ -2334,6 +2337,12 @@
     // --------------------- Gameplay ---------------------
     function performMove(toRow, toCol){
       if (gameOver || inGameOverSequence || isAdvancing) return;
+
+      if (!runFirstMoveMade) {
+        runFirstMoveMade = true;
+        const s = loadStats();
+        localStorage.setItem("chessrun-total-games", String(s.totalGames + 1));
+      }
 
       if (toRow > maxRowReached){
         score += (toRow - maxRowReached);
