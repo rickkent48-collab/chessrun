@@ -84,10 +84,12 @@
     /* Single-strip scroller */
     .strip-scroller{
       position:absolute; left:0; width:100%;
-      transform: translateY(0);
       pointer-events:none;
       will-change: transform;
+      -webkit-transform: translateY(0) translateZ(0);
+      transform: translateY(0) translateZ(0);
       backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
       z-index:5;
     }
     .strip-scroller.transition{
@@ -1011,15 +1013,13 @@
     }
     function updateStatsOnGameEnd(finalScore, finalTakes){
       const s = loadStats();
-      const totalGames = s.totalGames + 1;
       const totalScore = s.totalScore + (finalScore||0);
       const totalTakes = s.totalTakes + (finalTakes||0);
       const mostTakes  = Math.max(s.mostTakes, (finalTakes||0));
       const highScore  = Math.max(s.highScore, (finalScore||0));
       console.log("[Stats] saving on game end — finalScore:", finalScore, "finalTakes:", finalTakes,
-        "totalGames:", totalGames, "totalScore:", totalScore, "totalTakes:", totalTakes,
+        "totalScore:", totalScore, "totalTakes:", totalTakes,
         "mostTakes:", mostTakes, "highScore:", highScore);
-      localStorage.setItem("chessrun-total-games", String(totalGames));
       localStorage.setItem("chessrun-total-score", String(totalScore));
       localStorage.setItem("chessrun-total-takes", String(totalTakes));
       localStorage.setItem("chessrun-most-takes", String(mostTakes));
