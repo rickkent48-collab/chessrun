@@ -47,7 +47,7 @@
 
     .wrap{
       display:flex; flex-direction:column; align-items:center; justify-content:center;
-      min-height:100vh; gap:var(--above-gap); padding:10px 0 24px;
+      min-height:100vh; gap:var(--above-gap); padding:calc(10px + env(safe-area-inset-top, 0px)) 0 calc(24px + env(safe-area-inset-bottom, 0px));
       background:var(--dark);
     }
 
