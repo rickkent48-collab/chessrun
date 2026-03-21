@@ -47,7 +47,7 @@
 
     .wrap{
       display:flex; flex-direction:column; align-items:center; justify-content:center;
-      min-height:100vh; gap:var(--above-gap); padding:calc(10px + env(safe-area-inset-top, 0px)) 0 calc(24px + env(safe-area-inset-bottom, 0px));
+      min-height:100vh; min-height:100dvh; gap:var(--above-gap); padding:calc(10px + env(safe-area-inset-top, 0px)) 0 calc(24px + env(safe-area-inset-bottom, 0px));
       background:var(--dark);
     }
 
@@ -70,7 +70,7 @@
     .board-shell{
       position:relative;
       width:100vw; height:calc(var(--square-size) * var(--board-rows));
-      max-width:100vw; max-height:95vh;
+      max-width:100vw; max-height:95vh; max-height:95dvh;
       border-radius:0; box-shadow:none; background:var(--dark);
       overflow:hidden;
     }
@@ -199,11 +199,11 @@
     .menu-logo{
       display:block;
       width: 70vw;            /* large, but leaves big horizontal gaps */
-      max-height: 45vh;       /* most of the top half of screen */
+      max-height: 45vh; max-height: 45dvh;       /* most of the top half of screen */
       height: auto;
       object-fit: contain;
       margin-top: calc((100vw - 70vw) / 2);  /* top gap equals side gaps */
-      margin-bottom: 2vh;
+      margin-bottom: 2vh; margin-bottom: 2dvh;
       margin-left: auto;
       margin-right: auto;
       pointer-events: none;   /* decorative */
@@ -237,9 +237,9 @@
     
     .stats{ position:fixed; inset:0; display:none; z-index:75; border: var(--accent-w) solid var(--gold); border-radius: var(--sheet-radius); box-sizing: border-box; }
     .stats.show{ display:block; }
-    .stats-backdrop{ position:fixed; top:0; left:0; right:0; height:50vh; background: transparent; border-radius: var(--sheet-radius); }
+    .stats-backdrop{ position:fixed; top:0; left:0; right:0; height:50vh; height:50dvh; background: transparent; border-radius: var(--sheet-radius); }
     .stats-sheet{
-      position:fixed; left:0; right:0; bottom:0; height:58vh; background: var(--black); color: var(--text);
+      position:fixed; left:0; right:0; bottom:0; height:58vh; height:58dvh; background: var(--black); color: var(--text);
       border-radius: var(--sheet-radius);
       border: var(--accent-w) solid var(--gold); /* full gold outline with rounded corners */
       box-sizing: border-box;
