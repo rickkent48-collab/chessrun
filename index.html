@@ -1045,6 +1045,17 @@
 
     const CONSTRICTION = [0.65, 0.75, 0.83, 0.89, 0.93, 0.97];
 
+    // Minimum BFS path node count (start inclusive) and max reachable top-row columns per piece type.
+    // These enforce route complexity: longer paths mean forced detours; fewer reachable top squares
+    // mean fewer viable routes.
+    // PATH_MIN_NODES thresholds are set at ~80th percentile of baseline generation output so that
+    // ~20% of naturally generated boards satisfy them, giving reliable success within 80 retries.
+    // MAX_REACH_TOP is only meaningful for P (pawn) and B (bishop); for pieces that can traverse
+    // all columns (K/N/R/Q), the value is set to 9 (above max 8) to disable the check.
+    // For P: PATH_MIN_NODES=10 (all pawn paths meet this; the real funnel is MAX_REACH_TOP=4).
+    const PATH_MIN_NODES = { P: 10, K: 12, N: 8, B: 7, R: 5, Q: 5 };
+    const MAX_REACH_TOP  = { P: 4,  K: 9,  N: 9, B: 4, R: 9, Q: 9 };
+
     function currentStage(){ return STAGE_INDEX[player.type] ?? 0; }
 
     function nextPiece(type){
@@ -1216,6 +1227,65 @@
       return cols[0];
     }
 
+    // --------------------- Path-complexity analysis ---------------------
+    // Position-only (no board-state tracking) neighbor list for fast reachability BFS.
+    // Sliding pieces stop at the first piece they hit (can land on it, but not pass through).
+    function positionMovesFast(b, type, r, c){
+      const out = [];
+      const addSimple = (rr, cc) => {
+        if (!inBounds(rr, cc)) return;
+        const d = b[rr][cc];
+        if (!d || d.color === BLACK) out.push([rr, cc]);
+      };
+      if (type === "P"){
+        const f1 = r + 1;
+        if (inBounds(f1, c) && !b[f1][c]) out.push([f1, c]);
+        if (r === 0 && inBounds(r+2, c) && !b[r+1][c] && !b[r+2][c]) out.push([r+2, c]);
+        if (inBounds(f1, c-1) && b[f1][c-1] && b[f1][c-1].color === BLACK) out.push([f1, c-1]);
+        if (inBounds(f1, c+1) && b[f1][c+1] && b[f1][c+1].color === BLACK) out.push([f1, c+1]);
+      } else if (type === "K"){
+        for (let dr=-1; dr<=1; dr++) for (let dc=-1; dc<=1; dc++){
+          if (!dr && !dc) continue; addSimple(r+dr, c+dc);
+        }
+      } else if (type === "N"){
+        [[2,1],[2,-1],[-2,1],[-2,-1],[1,2],[1,-2],[-1,2],[-1,-2]].forEach(([dr,dc])=>addSimple(r+dr,c+dc));
+      } else {
+        const dirs = type === "B" ? [[1,1],[1,-1],[-1,1],[-1,-1]]
+                   : type === "R" ? [[1,0],[-1,0],[0,1],[0,-1]]
+                   : [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
+        for (const [dr, dc] of dirs){
+          let rr = r+dr, cc = c+dc;
+          while (inBounds(rr, cc)){
+            const d = b[rr][cc];
+            out.push([rr, cc]);
+            if (d) break; // stop ray at first piece
+            rr += dr; cc += dc;
+          }
+        }
+      }
+      return out;
+    }
+
+    // Fast upper-bound count of distinct TOP_ROW columns reachable using position-only BFS.
+    // Does not track board-state changes from captures; treats all squares as permanently occupied.
+    // Returns the number of distinct top-row columns the piece can reach.
+    function countReachableTopSquaresFast(b, type){
+      const sr = player.row, sc = player.col;
+      const queue = [[sr, sc]];
+      let head = 0;
+      const visited = new Set([sr + "," + sc]);
+      const topCols = new Set();
+      while (head < queue.length){
+        const [r, c] = queue[head++];
+        if (r === TOP_ROW){ topCols.add(c); continue; }
+        for (const [nr, nc] of positionMovesFast(b, type, r, c)){
+          const k = nr + "," + nc;
+          if (!visited.has(k)){ visited.add(k); queue.push([nr, nc]); }
+        }
+      }
+      return topCols.size;
+    }
+
     // --------------------- Generation with validation ---------------------
     // Reject segments that place a rook with a clear same-column line of sight to the pawn at start
     function forbidFrontRookForPawn(){
@@ -1248,7 +1318,15 @@
       if (!constrictAlternatesUsingPath()) return false;
 
       const res = bfsSafePath(board, player.type);
-      return !!(res && res.path && res.path.length);
+      if (!res || !res.path || !res.path.length) return false;
+
+      // Complexity constraints: require a minimum path length and restrict reachable top-row columns.
+      const minNodes = PATH_MIN_NODES[player.type] ?? 5;
+      const maxTop   = MAX_REACH_TOP[player.type]  ?? 9;
+      if (res.path.length < minNodes) return false;
+      if (countReachableTopSquaresFast(board, player.type) > maxTop) return false;
+
+      return true;
     }
 
     function hasSafeFirstMoveFromStart(){
