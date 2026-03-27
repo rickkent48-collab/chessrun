@@ -961,6 +961,7 @@
     const BOARD_ROWS = 11;
     const BOARD_COLS = 8;
     const TOP_ROW = BOARD_ROWS - 1;
+    const MID_ROW = Math.floor(BOARD_ROWS / 2);
     const WHITE = "W", BLACK = "B";
 
     const PROGRESSION = [
@@ -1350,12 +1351,17 @@
       r += firstAdvance;
 
       const switchRow = randInt(2, Math.min(7, TOP_ROW-2));
+      // For pawn boards where the first switch is in the bottom half, schedule a second
+      // forced diagonal capture in the top half to distribute capture opportunities.
+      const topSwitchRow = (player.type === "P" && switchRow <= MID_ROW)
+        ? randInt(MID_ROW + 1, TOP_ROW - 2)
+        : -1;
       let didSwitch = false;
 
       while (r < TOP_ROW){
         const nextR = r + 1;
 
-        if (nextR === switchRow){
+        if (nextR === switchRow || nextR === topSwitchRow){
           const dir = (c === 0) ? +1 : (c === BOARD_COLS-1) ? -1 : (Math.random() < 0.5 ? -1 : +1);
           const targetC = c + dir;
 
@@ -1710,6 +1716,40 @@
           const res2 = bfsSafePath(board, player.type);
           if (res2 && res2.path && res2.path.length){ extraCaptures++; break; }
           else board[curr.r][tc] = null;
+        }
+      }
+
+      // 3. Add 1-2 capturable pieces in the TOP HALF of the board (rows above the midpoint)
+      // This ensures capture opportunities are distributed across the full board length.
+      const pathRes3 = bfsSafePath(board, player.type);
+      if (!pathRes3 || !pathRes3.path || pathRes3.path.length < 2) return;
+      let topHalfCaptures = 0;
+      for (let i = 1; i < pathRes3.path.length && topHalfCaptures < 2; i++){
+        const prev = pathRes3.path[i-1];
+        const curr = pathRes3.path[i];
+        if (!(curr.r === prev.r + 1 && curr.c === prev.c && curr.r > MID_ROW && curr.r < TOP_ROW)) continue;
+        const dirs = shuffleCopy([-1, +1]);
+        for (const dc of dirs){
+          const tc = curr.c + dc;
+          if (!inBounds(curr.r, tc) || board[curr.r][tc]) continue;
+          const ek = keyOf(curr.r, tc);
+          if (protectedSquares.has(ek)) continue;
+          const tType = pickFromSubset(nearWeights, ["n","b","p"]);
+          board[curr.r][tc] = { color: BLACK, type: tType };
+          if (attacksAnyProtected(curr.r, tc, tType, protectedSquares)){
+            board[curr.r][tc] = null; continue;
+          }
+          pruneAttackersForCaptureLanding(prev.r, prev.c, curr.r, tc);
+          if (!landingSafeAfterSimulatedCapture(prev.r, prev.c, curr.r, tc)){
+            board[curr.r][tc] = null; continue;
+          }
+          const res4 = bfsSafePath(board, player.type);
+          if (res4 && res4.path && res4.path.length){
+            protectedSquares.add(ek);
+            mandatoryRookKeys.add(ek);
+            topHalfCaptures++;
+            break;
+          } else { board[curr.r][tc] = null; }
         }
       }
     }
