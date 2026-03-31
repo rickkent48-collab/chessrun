@@ -1712,6 +1712,36 @@
           else board[curr.r][tc] = null;
         }
       }
+
+      // 3. Add 1-2 extra capturable pieces in the top half of the board (rows >= midpoint)
+      const midRow = Math.floor(BOARD_ROWS / 2);
+      const pathRes3 = bfsSafePath(board, player.type);
+      if (!pathRes3 || !pathRes3.path || pathRes3.path.length < 2) return;
+      let topCaptures = 0;
+      for (let i = 1; i < pathRes3.path.length && topCaptures < 2; i++){
+        const prev = pathRes3.path[i-1];
+        const curr = pathRes3.path[i];
+        if (!(curr.r === prev.r + 1 && curr.c === prev.c && curr.r >= midRow && curr.r < TOP_ROW)) continue;
+        const dirs = shuffleCopy([-1, +1]);
+        for (const dc of dirs){
+          const tc = curr.c + dc;
+          if (!inBounds(curr.r, tc) || board[curr.r][tc]) continue;
+          const ek = keyOf(curr.r, tc);
+          if (protectedSquares.has(ek)) continue;
+          const tType = pickFromSubset(nearWeights, ["n","b","p"]);
+          board[curr.r][tc] = { color: BLACK, type: tType };
+          if (attacksAnyProtected(curr.r, tc, tType, protectedSquares)){
+            board[curr.r][tc] = null; continue;
+          }
+          pruneAttackersForCaptureLanding(prev.r, prev.c, curr.r, tc);
+          if (!landingSafeAfterSimulatedCapture(prev.r, prev.c, curr.r, tc)){
+            board[curr.r][tc] = null; continue;
+          }
+          const res3 = bfsSafePath(board, player.type);
+          if (res3 && res3.path && res3.path.length){ topCaptures++; break; }
+          else board[curr.r][tc] = null;
+        }
+      }
     }
 
     // King: place knights/pawns adjacent to king's path to shrink safe step options
